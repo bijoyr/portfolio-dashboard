@@ -36,6 +36,17 @@ npm install --userconfig /dev/null
 pip install --use-feature=truststore openpyxl
 ```
 
+The Playwright browser download (`npx playwright install`, needed once before `npm test`)
+fails the same way — `unable to verify the first certificate`. Neither workaround above fixes
+it; make Node read the OS trust store instead, where the Norton CA is registered (Node 22+):
+
+```bash
+NODE_OPTIONS=--use-system-ca npx playwright install chromium-headless-shell
+```
+
+Once the browser is installed, `npm test` itself needs no flag — it launches a local browser
+against a local file. None of this affects hosted CI, which downloads over public CAs normally.
+
 Nothing above is needed just to *use* the dashboard — only to rebuild it.
 
 ---

@@ -1,0 +1,47 @@
+name: CI
+
+# Reproduces the build and test on a clean host, so a green check here means
+# the repo works for anyone — not just on the machine it was committed from.
+#
+# Note on browsers: this downloads the Playwright browser the normal way, over
+# public CAs. The `--use-system-ca` dance in the README is only for the one
+# developer machine behind Norton's TLS interception; CI hosts don't need it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Node deps (Playwright package)
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Rebuild index.html from source
+        run: npm run build
+
+      - name: Assert build output is committed (determinism invariant)
+        # scripts/build.py is pure string injection with pinned encoding + LF, and
+        # .gitattributes pins eol=lf, so a rebuild must reproduce index.html exactly.
+        # A diff here means someone edited index.html by hand instead of src/app.html.
+        run: git diff --exit-code -- index.html
+
+      - name: Run regression + rollup verification
+        run: npm test
