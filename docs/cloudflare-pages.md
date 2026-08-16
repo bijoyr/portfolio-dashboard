@@ -64,18 +64,25 @@ Pages project at a time, so:
 
 ## Protecting main
 
-**Server-side** branch protection and rulesets require a public repo or GitHub Pro. This repo
-is private on the free plan, so neither is available — GitHub returns 403. The two ways to get
-a real server-side merge gate are to make the repo public or upgrade to Pro; do that and the
-check to require is `build-and-test`.
+The repo is **public**, so `main` is protected server-side by a **ruleset** (active). Direct
+pushes are refused; changes must go through a pull request whose `build-and-test` check passes,
+and force-pushes and branch deletion are blocked. A direct `git push origin main` returns:
 
-Until then, protection is **client-side**, via a versioned pre-push hook that enforces the
-build-determinism invariant before anything reaches `main`. Enable it once per clone:
+```
+- Changes must be made through a pull request.
+- Required status check "build-and-test" is expected.
+```
+
+This is the real gate — production (`www.trustfractals.com`) can only move via a green PR.
+
+A **client-side** pre-push hook (`.githooks/pre-push`) complements it as a fast local
+pre-check: it rebuilds `index.html` and refuses the push if it no longer matches source (the
+most common mistake), so you catch it before opening the PR rather than in CI. Enable once per
+clone:
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-The hook (`.githooks/pre-push`) rebuilds `index.html` and refuses the push if it no longer
-matches source — the most common mistake. The full test suite still runs remotely in CI on
-every PR; the hook is the fast local net. Bypass in an emergency with `git push --no-verify`.
+Bypass the hook in an emergency with `git push --no-verify` — but the server-side ruleset
+still applies and cannot be bypassed from the client.
