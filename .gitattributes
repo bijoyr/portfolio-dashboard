@@ -1,0 +1,6 @@
+# The build writes index.html with LF (scripts/build.py pins newline="\n").
+# Without this, core.autocrlf on Windows checks the working copy out as CRLF and
+# every build shows up as a full-file diff of all 1,528 lines.
+* text=auto eol=lf
+
+*.xlsx binary

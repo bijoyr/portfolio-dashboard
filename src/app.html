@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Reporting — Executive Drill-Down</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --plane:#f9f9f7;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --cat-1:#2a78d6; --cat-2:#eb6834; --cat-3:#1baf7a; --cat-4:#eda100;
+  --cat-5:#e87ba4; --cat-6:#008300; --cat-7:#4a3aa7; --cat-8:#e34948;
+  --ord-0:#c3c2b7; --ord-1:#86b6ef; --ord-2:#5598e7; --ord-3:#2a78d6; --ord-4:#184f95; --ord-5:#0d366b;
+  --seq-1:#cde2fb; --seq-2:#9ec5f4; --seq-3:#6da7ec; --seq-4:#3987e5; --seq-5:#256abf; --seq-6:#184f95; --seq-7:#0d366b;
+  --st-good:#0ca30c; --st-warn:#fab219; --st-serious:#ec835a; --st-crit:#d03b3b; --st-na:#c3c2b7;
+  --good-text:#006300;
+  --shadow:0 1px 2px rgba(11,11,11,.04),0 4px 14px rgba(11,11,11,.05);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --plane:#0d0d0d;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --cat-1:#3987e5; --cat-2:#d95926; --cat-3:#199e70; --cat-4:#c98500;
+  --cat-5:#d55181; --cat-6:#008300; --cat-7:#9085e9; --cat-8:#e66767;
+  --ord-0:#52514e; --ord-1:#b7d3f6; --ord-2:#86b6ef; --ord-3:#5598e7; --ord-4:#2a78d6; --ord-5:#184f95;
+  --seq-1:#0d366b; --seq-2:#184f95; --seq-3:#256abf; --seq-4:#3987e5; --seq-5:#6da7ec; --seq-6:#9ec5f4; --seq-7:#cde2fb;
+  --good-text:#0ca30c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--plane); color:var(--ink-1);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:14px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+button{font:inherit;color:inherit}
+
+/* ---------------- header ---------------- */
+header{
+  position:sticky; top:0; z-index:40; background:var(--surface-1);
+  border-bottom:1px solid var(--grid); padding:10px 22px;
+  display:flex; align-items:center; gap:16px;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.01em}
+.brand svg{display:block}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--ink-3);letter-spacing:0}
+.spacer{flex:1}
+.btn{
+  background:transparent;border:1px solid var(--ring);border-radius:8px;
+  padding:6px 12px;cursor:pointer;font-size:13px;color:var(--ink-2);
+  display:inline-flex;align-items:center;gap:6px;transition:background .12s,border-color .12s;
+}
+.btn:hover{background:var(--plane);border-color:var(--axis)}
+.btn.primary{background:var(--cat-1);color:#fff;border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08);background:var(--cat-1)}
+.chip{font-size:11px;color:var(--ink-3);border:1px solid var(--grid);border-radius:20px;padding:3px 10px}
+
+/* ---------------- crumbs + filters ---------------- */
+.bar{
+  background:var(--surface-1);border-bottom:1px solid var(--grid);
+  padding:9px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.bar.crumbs{position:sticky;top:53px;z-index:35}
+.crumb{
+  background:none;border:none;padding:2px 0;cursor:pointer;color:var(--ink-2);
+  font-size:13px;border-bottom:1px solid transparent;
+}
+.crumb:hover{color:var(--ink-1);border-bottom-color:var(--axis)}
+.crumb.here{color:var(--ink-1);font-weight:600;cursor:default}
+.crumb.here:hover{border-bottom-color:transparent}
+.sep{color:var(--ink-3);font-size:12px}
+.filters label{font-size:11px;color:var(--ink-3);margin-right:5px;text-transform:uppercase;letter-spacing:.05em}
+select,input[type=search]{
+  font:inherit;font-size:13px;background:var(--surface-1);color:var(--ink-1);
+  border:1px solid var(--ring);border-radius:8px;padding:5px 9px;min-width:120px;
+}
+input[type=search]{min-width:200px}
+select:focus,input:focus{outline:2px solid var(--cat-1);outline-offset:1px}
+
+/* ---------------- layout ---------------- */
+main{padding:20px 22px 60px;max-width:1680px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{
+  background:var(--surface-1);border:1px solid var(--ring);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);min-width:0;
+}
+.card h3{margin:0;font-size:13px;font-weight:650;letter-spacing:-.005em}
+.card .sub{margin:2px 0 0;font-size:11.5px;color:var(--ink-3)}
+.card-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+.card-head .spacer{flex:1}
+.toggle{
+  background:none;border:1px solid var(--ring);border-radius:6px;
+  font-size:11px;padding:3px 8px;cursor:pointer;color:var(--ink-3);
+}
+.toggle:hover{color:var(--ink-1);border-color:var(--axis)}
+.toggle[aria-pressed="true"]{background:var(--cat-1);color:#fff;border-color:transparent}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}
+.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}
+.s9{grid-column:span 9}.s12{grid-column:span 12}
+@media(max-width:1150px){.s3,.s4,.s5{grid-column:span 6}.s7,.s8,.s9{grid-column:span 12}}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}
+  .s3,.s4,.s5,.s6,.s7,.s8,.s9,.s12{grid-column:span 2}}
+
+/* ---------------- stat tiles ---------------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:14px;margin-bottom:14px}
+.tile{
+  background:var(--surface-1);border:1px solid var(--ring);border-radius:12px;
+  padding:14px 16px;box-shadow:var(--shadow);
+}
+.tile .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
+.tile .val{font-size:27px;font-weight:640;letter-spacing:-.025em;margin-top:5px;line-height:1.05}
+.tile .val.sm{font-size:22px}
+.tile .note{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.tile .note.good{color:var(--good-text)}
+.tile .note.bad{color:var(--st-crit)}
+.ragstrip{display:flex;gap:2px;margin-top:9px;height:5px;border-radius:3px;overflow:hidden}
+.ragstrip i{display:block;height:100%}
+
+/* ---------------- RAG chips ---------------- */
+.rag{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:19px;height:19px;border-radius:50%;font-size:11px;font-weight:700;
+  color:#fff;line-height:1;cursor:default;
+}
+.rag.g{background:var(--st-good)}
+.rag.a{background:var(--st-warn);color:#3a2a00}
+.rag.r{background:var(--st-crit)}
+.rag.na{background:transparent;color:var(--ink-3);border:1.5px solid var(--axis)}
+.ragtxt{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+
+/* ---------------- tables ---------------- */
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{
+  text-align:left;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-3);padding:7px 9px;border-bottom:1px solid var(--axis);
+  position:sticky;top:0;background:var(--surface-1);cursor:pointer;white-space:nowrap;
+}
+th:hover{color:var(--ink-1)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+th.ctr,td.ctr{text-align:center}
+td{padding:7px 9px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tbody tr:hover{background:var(--plane)}
+tbody tr.clickable{cursor:pointer}
+.twrap{max-height:460px;overflow:auto;margin:0 -18px -16px;padding:0 18px}
+.tname{font-weight:550;color:var(--ink-1)}
+.muted{color:var(--ink-3)}
+.tag{
+  display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:5px;
+  background:var(--plane);border:1px solid var(--grid);color:var(--ink-2);white-space:nowrap;
+}
+
+/* ---------------- drill cards ---------------- */
+.drills{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px}
+.drill{
+  background:var(--surface-1);border:1px solid var(--ring);border-radius:12px;padding:15px 16px;
+  box-shadow:var(--shadow);cursor:pointer;text-align:left;width:100%;
+  transition:transform .12s,border-color .12s,box-shadow .12s;
+}
+.drill:hover{transform:translateY(-2px);border-color:var(--cat-1);box-shadow:0 4px 18px rgba(42,120,214,.16)}
+.drill .dh{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px}
+.drill .dn{font-weight:640;font-size:14px;letter-spacing:-.01em;flex:1;line-height:1.3}
+.drill .dm{font-size:11.5px;color:var(--ink-3);margin-bottom:10px}
+.drill .bars{display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.drill .bars i{display:block;height:100%}
+.drill dl{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:0}
+.drill dt{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600}
+.drill dd{margin:0;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------------- misc ---------------- */
+.legend{display:flex;flex-wrap:wrap;gap:5px 15px;margin-top:12px;font-size:11.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block;flex:none}
+.empty{padding:34px;text-align:center;color:var(--ink-3);font-size:13px}
+#tip{
+  position:fixed;pointer-events:none;z-index:100;background:var(--ink-1);color:var(--surface-1);
+  padding:7px 10px;border-radius:7px;font-size:11.5px;line-height:1.45;max-width:280px;
+  opacity:0;transition:opacity .1s;box-shadow:0 4px 18px rgba(0,0,0,.24);
+}
+#tip b{font-weight:640}
+#drop{
+  position:fixed;inset:0;z-index:90;background:rgba(42,120,214,.10);
+  backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;
+}
+#drop.on{display:flex}
+#drop div{
+  background:var(--surface-1);border:2px dashed var(--cat-1);border-radius:16px;
+  padding:38px 54px;font-size:16px;font-weight:600;text-align:center;
+}
+#drop div small{display:block;font-weight:400;font-size:12.5px;color:var(--ink-3);margin-top:6px}
+.hidden{display:none !important}
+.health li{margin-bottom:5px;font-size:12.5px;color:var(--ink-2)}
+.health b{color:var(--ink-1)}
+.axtext{font-size:10.5px;fill:var(--ink-3)}
+.axline{stroke:var(--grid);stroke-width:1}
+.baseline{stroke:var(--axis);stroke-width:1}
+.dlabel{font-size:11px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
+.dlabel.strong{fill:var(--ink-1);font-weight:600}
+svg .hit{fill:transparent;cursor:default}
+
+/* ================= NAVIGATOR ================= */
+.navwrap{background:var(--surface-1);border-bottom:1px solid var(--grid)}
+.navhead{display:flex;align-items:center;gap:9px;padding:8px 22px;flex-wrap:wrap}
+.navhead .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-3);font-weight:700}
+.navbody{padding:0 22px 13px}
+.navbody.collapsed{display:none}
+.seg{display:inline-flex;border:1px solid var(--ring);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:none;padding:5px 11px;font-size:12px;
+  cursor:pointer;color:var(--ink-2);border-right:1px solid var(--ring)}
+.seg button:last-child{border-right:none}
+.seg button:hover{background:var(--plane);color:var(--ink-1)}
+.seg button[aria-pressed="true"]{background:var(--cat-1);color:#fff}
+
+/* --- cascade (Miller columns) --- */
+.cascade{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:start}
+@media(max-width:1000px){.cascade{grid-template-columns:repeat(2,1fr)}}
+.ccol{border:1px solid var(--ring);border-radius:10px;overflow:hidden;background:var(--plane)}
+.chd{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);
+  font-weight:700;padding:7px 10px;border-bottom:1px solid var(--grid);
+  display:flex;align-items:center;gap:6px;background:var(--surface-1)}
+.chd .n{margin-left:auto;font-weight:600;color:var(--ink-3);letter-spacing:0}
+.clist{max-height:190px;overflow-y:auto;overscroll-behavior:contain}
+.citem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;
+  border:none;border-bottom:1px solid var(--grid);padding:6px 9px;cursor:pointer;
+  transition:background .1s}
+.citem:last-child{border-bottom:none}
+.citem:hover{background:var(--surface-1)}
+.citem:focus-visible{outline:2px solid var(--cat-1);outline-offset:-2px}
+.citem.sel{background:var(--cat-1)}
+.citem.sel .cn,.citem.sel .cm,.citem.sel .cv{color:#fff}
+.citem.sel .rag.na{border-color:rgba(255,255,255,.6);color:#fff}
+.citem.onpath{background:color-mix(in srgb,var(--cat-1) 12%,transparent)}
+.cn{flex:1;min-width:0;font-size:12px;font-weight:550;line-height:1.28;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm{font-size:10px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cv{font-size:10.5px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums;
+  font-weight:600}
+.cempty{padding:14px 10px;font-size:11.5px;color:var(--ink-3);text-align:center}
+.citem .chev{color:var(--ink-3);font-size:11px;flex:none}
+.citem.sel .chev{color:rgba(255,255,255,.75)}
+
+/* --- matrix --- */
+.mtx{width:100%;border-collapse:separate;border-spacing:2px}
+.mtx th{position:static;background:transparent;border:none;padding:4px 6px;
+  font-size:9.5px;letter-spacing:.05em;cursor:default}
+.mtx th.rowh{text-align:left;max-width:190px;white-space:normal;line-height:1.3;
+  text-transform:none;letter-spacing:0}
+.mtx td{padding:0;border:none}
+.mcell{width:100%;border:1px solid var(--ring);border-radius:6px;padding:7px 4px;
+  cursor:pointer;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums;
+  line-height:1.15;transition:transform .1s}
+.mcell:hover{transform:scale(1.06);border-color:var(--cat-1)}
+.mcell small{display:block;font-size:9px;font-weight:500;opacity:.75;margin-top:1px}
+.mcell.zero{cursor:default;opacity:.45}
+.mcell.zero:hover{transform:none;border-color:var(--ring)}
+.mtot{font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;
+  text-align:center;font-weight:600}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+      <rect x="1.5" y="12" width="5" height="12" rx="1.5" fill="var(--cat-1)"/>
+      <rect x="8.5" y="6.5" width="5" height="17.5" rx="1.5" fill="var(--cat-3)"/>
+      <rect x="15.5" y="1.5" width="5" height="22.5" rx="1.5" fill="var(--cat-4)"/>
+    </svg>
+    <div>Portfolio Reporting<small id="srcnote">Sample data</small></div>
+  </div>
+  <div class="spacer"></div>
+  <span class="chip" id="asat"></span>
+  <button class="btn" id="loadbtn">Load workbook</button>
+  <button class="btn" id="themebtn" title="Toggle light / dark">Dark</button>
+  <input type="file" id="fileinput" accept=".xlsx,.xlsm" class="hidden">
+</header>
+
+<nav class="bar crumbs" id="crumbs"></nav>
+
+<div class="navwrap" id="navwrap"></div>
+
+<div class="bar filters">
+  <div><label for="fdept">Department</label><select id="fdept"></select></div>
+  <div><label for="fphase">Phase</label><select id="fphase"></select></div>
+  <div><label for="frag">Overall RAG</label><select id="frag"></select></div>
+  <div><label for="fq">Search</label><input type="search" id="fq" placeholder="Project, manager, sponsor…"></div>
+  <div class="spacer"></div>
+  <span class="chip" id="scopechip"></span>
+  <button class="btn" id="clearf">Clear</button>
+</div>
+
+<main id="view"></main>
+
+<div id="tip"></div>
+<div id="drop"><div>Drop your workbook to load it<small>.xlsx exported from the Portfolio Reporting template</small></div></div>
+
+<script>
+"use strict";
+const RAW = /*__DATA__*/;
+
+/* =======================================================================
+   1. CONSTANTS
+   ======================================================================= */
+const PHASES = ["0 - Requested","1 - Initiating","2 - Planning","3 - Executing",
+                "4 - Monitoring & Controlling","5 - Closing"];
+const PHASE_SHORT = ["Requested","Initiating","Planning","Executing","Monitoring","Closing"];
+const ORD = ["var(--ord-0)","var(--ord-1)","var(--ord-2)","var(--ord-3)","var(--ord-4)","var(--ord-5)"];
+const CAT = i => `var(--cat-${(i%8)+1})`;
+const SEQ = ["var(--seq-1)","var(--seq-2)","var(--seq-3)","var(--seq-4)","var(--seq-5)","var(--seq-6)","var(--seq-7)"];
+const RAGCOL = {g:"var(--st-good)",a:"var(--st-warn)",r:"var(--st-crit)",na:"var(--st-na)"};
+const RAGGLYPH = {g:"✓",a:"!",r:"✕",na:"–"};
+const RAGNAME = {g:"Green",a:"Amber",r:"Red",na:"Not started"};
+const RANK = {g:0,a:1,r:2,na:-1};
+
+/* =======================================================================
+   2. HELPERS
+   ======================================================================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = v => { const n = typeof v==="number"?v:parseFloat(String(v).replace(/[$,%\s]/g,"")); return isFinite(n)?n:0; };
+
+function money(v,dp){
+  const a=Math.abs(v||0), s=v<0?"-":"";
+  if(a>=1e9) return s+"$"+(a/1e9).toFixed(dp==null?2:dp)+"B";
+  if(a>=1e6) return s+"$"+(a/1e6).toFixed(dp==null?1:dp)+"M";
+  if(a>=1e3) return s+"$"+Math.round(a/1e3)+"K";
+  return s+"$"+Math.round(a);
+}
+function moneyC(v){
+  const a=Math.abs(v||0), s=v<0?"-":"";
+  if(a>=1e9) return s+"$"+(a/1e9).toFixed(1)+"B";
+  if(a>=1e6) return s+"$"+Math.round(a/1e6)+"M";
+  if(a>=1e3) return s+"$"+Math.round(a/1e3)+"K";
+  return s+"$"+Math.round(a);
+}
+const pct = v => (v==null||!isFinite(v)) ? "—" : (v*100).toFixed(0)+"%";
+const idx = v => (v==null||!isFinite(v)) ? "—" : v.toFixed(2);
+const dstr = s => s ? String(s).slice(0,10) : "";
+function dparse(s){ if(!s) return null; const d=new Date(String(s).slice(0,10)+"T00:00:00"); return isNaN(d)?null:d; }
+function days(a,b){ const x=dparse(a),y=dparse(b); return (x&&y)? Math.round((y-x)/864e5) : null; }
+
+function ragIndex(v,g,a){ if(v==null||!isFinite(v)) return "na"; return v>=g?"g":(v>=a?"a":"r"); }
+function ragExp(v,g,a){ if(v==null) return "g"; return v<=g?"g":(v<=a?"a":"r"); }
+function worst(list){
+  let out="na";
+  for(const r of list){ if(RANK[r]>RANK[out]) out=r; }
+  return out;
+}
+const ragChip = r => `<span class="rag ${r}" data-tip="<b>${RAGNAME[r]}</b>" aria-label="${RAGNAME[r]}">${RAGGLYPH[r]}</span>`;
+const ragText = r => `<span class="ragtxt">${ragChip(r)} ${RAGNAME[r]}</span>`;
+
+/* =======================================================================
+   3. NORMALISE + DERIVE
+   ======================================================================= */
+let DATA=null, CFG=null, PROBLEMS=[];
+
+function normalize(raw){
+  PROBLEMS=[];
+  const cfg = Object.assign({
+    CPI_Green:.95, CPI_Amber:.85, SPI_Green:.95, SPI_Amber:.85,
+    Risk_Green:10, Risk_Amber:16,
+    Rollup_RiskRed_Share:.20, Rollup_RiskAmber_Share:.08,
+    Rollup_DeliveryRed_Share:.30, Rollup_DeliveryAmber_Share:.15,
+    Currency:"USD", ReportingDate:new Date().toISOString().slice(0,10)
+  }, raw.config||{});
+  ["CPI_Green","CPI_Amber","SPI_Green","SPI_Amber","Risk_Green","Risk_Amber",
+   "Rollup_RiskRed_Share","Rollup_RiskAmber_Share",
+   "Rollup_DeliveryRed_Share","Rollup_DeliveryAmber_Share"].forEach(k=>{
+     cfg[k]=num(cfg[k]); if(cfg[k]>1.5 && k.endsWith("_Share")) cfg[k]/=100; });
+  CFG=cfg;
+
+  const priorities = (raw.priorities||[]).map(r=>({...r, WeightPct:num(r.WeightPct)}));
+  const portfolios = (raw.portfolios||[]).slice();
+  const programs   = (raw.programs||[]).slice();
+
+  const risksBy={}, issuesBy={}, msBy={}, lessBy={};
+  const bucket=(arr,map,key)=>{ (arr||[]).forEach(r=>{ const k=r[key]; if(!k) return; (map[k]=map[k]||[]).push(r); }); };
+  bucket(raw.risks,risksBy,"ProjectID");
+  bucket(raw.issues,issuesBy,"ProjectID");
+  bucket(raw.milestones,msBy,"ProjectID");
+  bucket(raw.lessons,lessBy,"ProjectID");
+
+  const projects = (raw.projects||[]).map(r=>{
+    const p = {...r};
+    p.BudgetAtCompletion=num(p.BudgetAtCompletion);
+    p.PlannedValue=num(p.PlannedValue);
+    p.EarnedValue=num(p.EarnedValue);
+    p.ActualCost=num(p.ActualCost);
+    p.PercentComplete=num(p.PercentComplete);
+    if(p.PercentComplete>1.5) p.PercentComplete/=100;   // tolerate "45" for 45%
+    p.StartDate=dstr(p.StartDate); p.BaselineFinish=dstr(p.BaselineFinish); p.ForecastFinish=dstr(p.ForecastFinish);
+    if(!PHASES.includes(p.Phase)){
+      const hit = PHASES.find(x=>x.toLowerCase().includes(String(p.Phase||"").toLowerCase().replace(/^\d+\s*-\s*/,"")));
+      p.Phase = hit || PHASES[0];
+    }
+    p.phaseIdx = PHASES.indexOf(p.Phase);
+
+    p.risks=risksBy[p.ProjectID]||[]; p.issues=issuesBy[p.ProjectID]||[];
+    p.milestones=(msBy[p.ProjectID]||[]).slice().sort((a,b)=>String(a.BaselineDate).localeCompare(String(b.BaselineDate)));
+    p.lessons=lessBy[p.ProjectID]||[];
+
+    p.openRisks = p.risks.filter(r=>String(r.Status).toLowerCase()!=="closed");
+    p.openRisks.forEach(r=>{ r.exposure = num(r.Probability)*num(r.Impact); });
+    p.maxExposure = p.openRisks.length ? Math.max(...p.openRisks.map(r=>r.exposure)) : null;
+    p.openIssues = p.issues.filter(i=>String(i.Status).toLowerCase()!=="resolved");
+    p.critIssues = p.openIssues.filter(i=>["critical","high"].includes(String(i.Severity).toLowerCase()));
+    p.msDone = p.milestones.filter(m=>m.ActualDate).length;
+    p.msOverdue = p.milestones.filter(m=>!m.ActualDate && dparse(m.ForecastDate) && dparse(m.ForecastDate) < dparse(cfg.ReportingDate)).length;
+
+    p.sv = p.EarnedValue - p.PlannedValue;
+    p.cv = p.EarnedValue - p.ActualCost;
+    p.spi = p.PlannedValue>0 ? p.EarnedValue/p.PlannedValue : null;
+    p.cpi = p.ActualCost>0 ? p.EarnedValue/p.ActualCost : null;
+    p.eac = p.cpi ? p.BudgetAtCompletion/p.cpi : null;
+    p.vac = p.eac!=null ? p.BudgetAtCompletion-p.eac : null;
+    p.slip = days(p.BaselineFinish,p.ForecastFinish);
+
+    p.ragCost  = ragIndex(p.cpi,cfg.CPI_Green,cfg.CPI_Amber);
+    p.ragSched = ragIndex(p.spi,cfg.SPI_Green,cfg.SPI_Amber);
+    p.ragRisk  = p.phaseIdx===0 ? "na" : ragExp(p.maxExposure,cfg.Risk_Green,cfg.Risk_Amber);
+    p.ragAll   = worst([p.ragCost,p.ragSched,p.ragRisk]);
+    return p;
+  });
+
+  // indexes + referential integrity
+  const byPri={}, byPf={}, byPg={};
+  priorities.forEach(x=>byPri[x.PriorityID]=x);
+  portfolios.forEach(x=>byPf[x.PortfolioID]=x);
+  programs.forEach(x=>byPg[x.ProgramID]=x);
+
+  const orphanPf = portfolios.filter(x=>!byPri[x.PriorityID]);
+  const orphanPg = programs.filter(x=>!byPf[x.PortfolioID]);
+  const orphanPj = projects.filter(x=>!byPg[x.ProgramID]);
+  if(orphanPf.length) PROBLEMS.push(`${orphanPf.length} portfolio(s) reference a PriorityID that does not exist`);
+  if(orphanPg.length) PROBLEMS.push(`${orphanPg.length} program(s) reference a PortfolioID that does not exist`);
+  if(orphanPj.length) PROBLEMS.push(`${orphanPj.length} project(s) reference a ProgramID that does not exist`);
+  const noBac = projects.filter(p=>!p.BudgetAtCompletion).length;
+  if(noBac) PROBLEMS.push(`${noBac} project(s) have no BudgetAtCompletion — excluded from financial rollups`);
+  const orphanChild = (raw.risks||[]).concat(raw.issues||[],raw.milestones||[])
+      .filter(r=>r.ProjectID && !projects.some(p=>p.ProjectID===r.ProjectID)).length;
+  if(orphanChild) PROBLEMS.push(`${orphanChild} risk/issue/milestone row(s) reference a ProjectID that does not exist`);
+
+  // wire the tree (orphans excluded from rollups but still counted above)
+  programs.forEach(pg=>{ pg.projects = projects.filter(p=>p.ProgramID===pg.ProgramID); pg.portfolio=byPf[pg.PortfolioID]; });
+  portfolios.forEach(pf=>{
+    pf.programs = programs.filter(pg=>pg.PortfolioID===pf.PortfolioID);
+    pf.projects = pf.programs.flatMap(pg=>pg.projects); pf.priority=byPri[pf.PriorityID];
+  });
+  priorities.forEach(pr=>{
+    pr.portfolios = portfolios.filter(pf=>pf.PriorityID===pr.PriorityID);
+    pr.projects = pr.portfolios.flatMap(pf=>pf.projects);
+  });
+
+  return {cfg,priorities,portfolios,programs,projects,byPri,byPf,byPg};
+}
+
+/* Rollup.
+   Cost and schedule aggregate the earned-value measures, which is standard practice.
+   Risk does NOT take the single worst risk in the group — one severe risk would turn a
+   50-project portfolio red and the indicator would carry no information. It uses
+   CONCENTRATION instead: what share of the group's projects are themselves red on risk. */
+/* Concentration thresholds are read from the Config sheet, never hard-coded here. */
+function roll(projects){
+  const o={n:projects.length,bac:0,pv:0,ev:0,ac:0,risks:0,issues:0,crit:0,
+           rag:{g:0,a:0,r:0,na:0},maxExposure:null,overdueMs:0,riskRed:0,scored:0};
+  projects.forEach(p=>{
+    o.bac+=p.BudgetAtCompletion; o.pv+=p.PlannedValue; o.ev+=p.EarnedValue; o.ac+=p.ActualCost;
+    o.risks+=p.openRisks.length; o.issues+=p.openIssues.length; o.crit+=p.critIssues.length;
+    o.overdueMs+=p.msOverdue;
+    o.rag[p.ragAll]++;
+    if(p.ragRisk!=="na"){ o.scored++; if(p.ragRisk==="r") o.riskRed++; }
+    if(p.maxExposure!=null) o.maxExposure = Math.max(o.maxExposure==null?0:o.maxExposure, p.maxExposure);
+  });
+  o.spi = o.pv>0 ? o.ev/o.pv : null;
+  o.cpi = o.ac>0 ? o.ev/o.ac : null;
+  o.pctComplete = o.bac>0 ? o.ev/o.bac : null;
+  o.eac = o.cpi ? o.bac/o.cpi : null;
+  o.vac = o.eac!=null ? o.bac-o.eac : null;
+  o.riskShare = o.scored ? o.riskRed/o.scored : 0;
+  /* Delivery concentration stops aggregate masking: a group whose totals look healthy
+     cannot show green while a quarter of its projects are individually red. */
+  const live = o.rag.g+o.rag.a+o.rag.r;
+  o.redShare = live ? o.rag.r/live : 0;
+  o.ragCost  = ragIndex(o.cpi,CFG.CPI_Green,CFG.CPI_Amber);
+  o.ragSched = ragIndex(o.spi,CFG.SPI_Green,CFG.SPI_Amber);
+  o.ragRisk  = !o.scored ? "na"
+             : (o.riskShare>=CFG.Rollup_RiskRed_Share ? "r"
+             : (o.riskShare>=CFG.Rollup_RiskAmber_Share ? "a" : "g"));
+  o.ragDeliv = !live ? "na"
+             : (o.redShare>=CFG.Rollup_DeliveryRed_Share ? "r"
+             : (o.redShare>=CFG.Rollup_DeliveryAmber_Share ? "a" : "g"));
+  o.ragAll   = worst([o.ragCost,o.ragSched,o.ragRisk,o.ragDeliv]);
+  return o;
+}
+
+/* =======================================================================
+   4. STATE + FILTERS
+   ======================================================================= */
+const state = {dept:"",phase:"",rag:"",q:""};
+
+function passes(p){
+  if(state.dept && p.Department!==state.dept) return false;
+  if(state.phase && p.Phase!==state.phase) return false;
+  if(state.rag && p.ragAll!==state.rag) return false;
+  if(state.q){
+    const q=state.q.toLowerCase();
+    const hay=[p.ProjectName,p.ProjectManager,p.Sponsor,p.ProjectID,p.Department].join(" ").toLowerCase();
+    if(!hay.includes(q)) return false;
+  }
+  return true;
+}
+const filtered = list => list.filter(passes);
+const anyFilter = () => !!(state.dept||state.phase||state.rag||state.q);
+
+/* =======================================================================
+   5. CHART PRIMITIVES  (all colours via CSS vars so dark mode swaps live)
+   ======================================================================= */
+let cardSeq=0;
+function chartCard(span,title,sub,svg,tableHTML,extra){
+  const id="c"+(++cardSeq);
+  return `<section class="card ${span}">
+    <div class="card-head">
+      <div><h3>${esc(title)}</h3>${sub?`<p class="sub">${esc(sub)}</p>`:""}</div>
+      <div class="spacer"></div>
+      ${tableHTML?`<button class="toggle" data-tv="${id}" aria-pressed="false">Table</button>`:""}
+    </div>
+    <div id="${id}-chart">${svg}</div>
+    ${tableHTML?`<div id="${id}-table" class="hidden twrap">${tableHTML}</div>`:""}
+    ${extra||""}
+  </section>`;
+}
+
+function simpleTable(cols,rows){
+  return `<table><thead><tr>${cols.map(c=>`<th class="${c.cls||""}">${esc(c.h)}</th>`).join("")}</tr></thead>
+  <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td class="${cols[i].cls||""}">${v}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+/* --- horizontal bars, one series -> one colour (or ordinal for ordered cats) --- */
+function barH(items,opts){
+  opts=opts||{};
+  const W=opts.w||520, rowH=30, padL=opts.padL||156, padR=76, top=6;
+  const H=top+items.length*rowH+8;
+  const max=Math.max(1,...items.map(d=>d.v));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img">`;
+  items.forEach((d,i)=>{
+    const y=top+i*rowH, bw=Math.max(0,(d.v/max)*(W-padL-padR));
+    const col=d.color||CAT(0);
+    s+=`<text class="axtext" x="${padL-10}" y="${y+15}" text-anchor="end">${esc(d.label)}</text>`;
+    s+=`<rect x="${padL}" y="${y+4}" width="${bw}" height="15" rx="4" fill="${col}"
+          data-tip="<b>${esc(d.label)}</b><br>${esc(d.tip||d.disp||d.v)}"/>`;
+    s+=`<text class="dlabel" x="${padL+bw+8}" y="${y+15}">${esc(d.disp!=null?d.disp:d.v)}</text>`;
+  });
+  s+=`</svg>`;
+  return s;
+}
+
+/* --- ordinal phase funnel --- */
+function phaseFunnel(projects){
+  const counts=PHASES.map((ph,i)=>({
+    label:PHASE_SHORT[i], v:projects.filter(p=>p.Phase===ph).length,
+    color:ORD[i], tip:`${projects.filter(p=>p.Phase===ph).length} project(s)`
+  }));
+  const tbl=simpleTable([{h:"Phase"},{h:"Projects",cls:"num"},{h:"Budget",cls:"num"}],
+    PHASES.map((ph,i)=>{
+      const set=projects.filter(p=>p.Phase===ph);
+      return [esc(PHASE_SHORT[i]),set.length,money(set.reduce((a,b)=>a+b.BudgetAtCompletion,0))];
+    }));
+  return chartCard("s4","Projects by phase","PMBOK process groups, in sequence",
+    barH(counts,{w:480,padL:96}),tbl,
+    `<div class="legend"><span><i style="background:var(--ord-0)"></i>Requested — pipeline, not yet approved</span></div>`);
+}
+
+/* --- Sankey: department -> phase --- */
+function sankey(projects){
+  const depts=[...new Set(projects.map(p=>p.Department))].filter(Boolean)
+      .map(d=>({d,n:projects.filter(p=>p.Department===d).length}))
+      .sort((a,b)=>b.n-a.n);
+  let nodes=depts.slice(0,8).map(x=>x.d);
+  const other=depts.slice(8);
+  const dOf = p => nodes.includes(p.Department) ? p.Department : (other.length?"Other":p.Department);
+  if(other.length) nodes=nodes.concat(["Other"]);
+
+  const W=920,H=Math.max(300,nodes.length*40+40),padT=26,padB=18,nw=13;
+  const lx=150, rx=W-150;
+  const total=projects.length||1;
+  const avail=H-padT-padB;
+  const gap=6;
+
+  const lTot=nodes.map(d=>projects.filter(p=>dOf(p)===d).length);
+  const rTot=PHASES.map(ph=>projects.filter(p=>p.Phase===ph).length);
+  const lSum=lTot.reduce((a,b)=>a+b,0)||1, rSum=rTot.reduce((a,b)=>a+b,0)||1;
+  const lH=lTot.map(v=>Math.max(1,(v/lSum)*(avail-gap*(nodes.length-1))));
+  const rH=rTot.map(v=>Math.max(1,(v/rSum)*(avail-gap*(PHASES.length-1))));
+
+  const lY=[],rY=[];
+  let y=padT; nodes.forEach((d,i)=>{lY[i]=y; y+=lH[i]+gap;});
+  y=padT; PHASES.forEach((p,i)=>{rY[i]=y; y+=rH[i]+gap;});
+
+  const lCur=lY.slice(), rCur=rY.slice();
+  let ribbons="";
+  nodes.forEach((d,i)=>{
+    PHASES.forEach((ph,j)=>{
+      const n=projects.filter(p=>dOf(p)===d && p.Phase===ph).length;
+      if(!n) return;
+      const th=(n/lTot[i])*lH[i], th2=(n/(rTot[j]||1))*rH[j];
+      const y0=lCur[i], y1=rCur[j]; lCur[i]+=th; rCur[j]+=th2;
+      const c=(lx+nw+rx)/2;
+      ribbons+=`<path d="M${lx+nw},${y0} C${c},${y0} ${c},${y1} ${rx},${y1}
+        L${rx},${y1+th2} C${c},${y1+th2} ${c},${y0+th} ${lx+nw},${y0+th} Z"
+        fill="${CAT(i)}" opacity=".34"
+        data-tip="<b>${esc(d)} → ${esc(PHASE_SHORT[j])}</b><br>${n} project(s)"/>`;
+    });
+  });
+
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${Math.min(H,420)}" role="img">${ribbons}`;
+  nodes.forEach((d,i)=>{
+    s+=`<rect x="${lx}" y="${lY[i]}" width="${nw}" height="${lH[i]}" rx="3" fill="${CAT(i)}"
+         data-tip="<b>${esc(d)}</b><br>${lTot[i]} project(s)"/>
+        <text class="axtext" x="${lx-9}" y="${lY[i]+lH[i]/2+4}" text-anchor="end">${esc(d)} · ${lTot[i]}</text>`;
+  });
+  PHASES.forEach((ph,j)=>{
+    s+=`<rect x="${rx}" y="${rY[j]}" width="${nw}" height="${rH[j]}" rx="3" fill="${ORD[j]}"
+         data-tip="<b>${esc(PHASE_SHORT[j])}</b><br>${rTot[j]} project(s)"/>
+        <text class="axtext" x="${rx+nw+9}" y="${rY[j]+rH[j]/2+4}">${esc(PHASE_SHORT[j])} · ${rTot[j]}</text>`;
+  });
+  s+=`<text class="axtext" x="${lx}" y="14" text-anchor="end" style="font-weight:600">DEPARTMENT</text>
+      <text class="axtext" x="${rx+nw}" y="14" style="font-weight:600">PHASE</text></svg>`;
+
+  const rows=[];
+  nodes.forEach(d=>PHASES.forEach((ph,j)=>{
+    const n=projects.filter(p=>dOf(p)===d&&p.Phase===ph).length;
+    if(n) rows.push([esc(d),esc(PHASE_SHORT[j]),n]);
+  }));
+  return chartCard("s8","Where the work sits","Project flow from owning department into delivery phase",
+    s,simpleTable([{h:"Department"},{h:"Phase"},{h:"Projects",cls:"num"}],rows));
+}
+
+/* --- budget by child entity, reusable at every level --- */
+function budgetBar(items,span,title,sub){
+  const top=items.map(it=>({it,r:roll(filtered(it.projects))}))
+    .sort((a,b)=>b.r.bac-a.r.bac);
+  const shown=top.slice(0,9);
+  const bars=shown.map(({it,r})=>({
+    label: it.name.length>24 ? it.name.slice(0,23)+"…" : it.name,
+    v:r.bac, disp:money(r.bac), color:CAT(0),
+    tip:`${r.n} project(s) · ${money(r.bac)} approved · ${money(r.ac)} spent`}));
+  const tbl=simpleTable([{h:"Name"},{h:"Projects",cls:"num"},{h:"Budget",cls:"num"},{h:"Spent",cls:"num"},{h:"Forecast",cls:"num"}],
+    top.map(({it,r})=>[esc(it.name),r.n,money(r.bac),money(r.ac),r.eac?money(r.eac):"—"]));
+  return chartCard(span,title,sub+(top.length>9?` · top 9 of ${top.length} shown`:""),
+    barH(bars,{w:520,padL:172}),tbl);
+}
+
+/* --- SPI / CPI quadrant --- */
+function quadrant(projects,span){
+  const set=projects.filter(p=>p.spi!=null&&p.cpi!=null);
+  const W=560,H=380,pad=52;
+  const lo=.55,hi=1.35;
+  const X=v=>pad+((Math.min(Math.max(v,lo),hi)-lo)/(hi-lo))*(W-pad-18);
+  const Y=v=>H-pad-((Math.min(Math.max(v,lo),hi)-lo)/(hi-lo))*(H-pad-22);
+  const maxB=Math.max(1,...set.map(p=>p.BudgetAtCompletion));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img">`;
+  [.6,.8,1.0,1.2].forEach(t=>{
+    s+=`<line class="axline" x1="${X(t)}" y1="22" x2="${X(t)}" y2="${H-pad}"/>
+        <line class="axline" x1="${pad}" y1="${Y(t)}" x2="${W-18}" y2="${Y(t)}"/>
+        <text class="axtext" x="${X(t)}" y="${H-pad+15}" text-anchor="middle">${t.toFixed(1)}</text>
+        <text class="axtext" x="${pad-8}" y="${Y(t)+4}" text-anchor="end">${t.toFixed(1)}</text>`;
+  });
+  s+=`<line class="baseline" x1="${X(1)}" y1="22" x2="${X(1)}" y2="${H-pad}"/>
+      <line class="baseline" x1="${pad}" y1="${Y(1)}" x2="${W-18}" y2="${Y(1)}"/>
+      <text class="axtext" x="${pad+6}" y="36" opacity=".8">behind · under budget</text>
+      <text class="axtext" x="${W-22}" y="36" text-anchor="end" opacity=".8">ahead · under control</text>
+      <text class="axtext" x="${pad+6}" y="${H-pad-7}" opacity=".8">behind · over budget</text>
+      <text class="axtext" x="${W-22}" y="${H-pad-7}" text-anchor="end" opacity=".8">ahead · over budget</text>
+      <text class="axtext" x="${(W+pad)/2}" y="${H-pad+32}" text-anchor="middle">Cost Performance Index (CPI) →</text>
+      <text class="axtext" transform="translate(14,${(H-20)/2}) rotate(-90)" text-anchor="middle">Schedule Performance Index (SPI) →</text>`;
+  set.slice().sort((a,b)=>b.BudgetAtCompletion-a.BudgetAtCompletion).forEach(p=>{
+    const r=6+Math.sqrt(p.BudgetAtCompletion/maxB)*16;
+    s+=`<circle cx="${X(p.cpi)}" cy="${Y(p.spi)}" r="${r}" fill="${RAGCOL[p.ragAll]}" opacity=".62"
+        stroke="var(--surface-1)" stroke-width="2"
+        data-tip="<b>${esc(p.ProjectName)}</b><br>SPI ${idx(p.spi)} · CPI ${idx(p.cpi)}<br>Budget ${money(p.BudgetAtCompletion)}<br>Overall: ${RAGNAME[p.ragAll]}"
+        data-go="#/project/${esc(p.ProjectID)}" style="cursor:pointer"/>`;
+  });
+  s+=`</svg>`;
+  const tbl=simpleTable([{h:"Project"},{h:"SPI",cls:"num"},{h:"CPI",cls:"num"},{h:"Budget",cls:"num"},{h:"Overall",cls:"ctr"}],
+    set.slice().sort((a,b)=>a.spi-b.spi).map(p=>[esc(p.ProjectName),idx(p.spi),idx(p.cpi),money(p.BudgetAtCompletion),RAGNAME[p.ragAll]]));
+  return chartCard(span||"s8","Schedule vs cost performance",
+    "Bubble size = budget. Bottom-left is behind schedule and over budget. Click a bubble to open the project.",
+    s,tbl,
+    `<div class="legend">
+      <span><i style="background:var(--st-good)"></i>Green</span>
+      <span><i style="background:var(--st-warn)"></i>Amber</span>
+      <span><i style="background:var(--st-crit)"></i>Red</span></div>`);
+}
+
+/* --- risk matrix 5x5 --- */
+function riskMatrix(risks,span){
+  const cell=(p,i)=>risks.filter(r=>num(r.Probability)===p&&num(r.Impact)===i).length;
+  const W=440,H=330,pad=62,cw=(W-pad-22)/5,ch=(H-pad-34)/5;
+  const maxN=Math.max(1,...[1,2,3,4,5].flatMap(p=>[1,2,3,4,5].map(i=>cell(p,i))));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img">`;
+  for(let p=1;p<=5;p++) for(let i=1;i<=5;i++){
+    const n=cell(p,i), x=pad+(i-1)*cw, y=H-34-p*ch;
+    const step = n===0?0:Math.min(6,Math.ceil((n/maxN)*6));
+    s+=`<rect x="${x+1}" y="${y+1}" width="${cw-2}" height="${ch-2}" rx="4"
+        fill="${n===0?"var(--plane)":SEQ[step]}" stroke="var(--ring)" stroke-width="1"
+        data-tip="<b>Probability ${p} × Impact ${i}</b><br>Exposure ${p*i}<br>${n} open risk(s)"/>`;
+    if(n) s+=`<text class="dlabel ${step>=4?"":""}" x="${x+cw/2}" y="${y+ch/2+4}" text-anchor="middle"
+        fill="${step>=4?"#fff":"var(--ink-1)"}" style="font-weight:600">${n}</text>`;
+  }
+  for(let i=1;i<=5;i++) s+=`<text class="axtext" x="${pad+(i-.5)*cw}" y="${H-14}" text-anchor="middle">${i}</text>`;
+  for(let p=1;p<=5;p++) s+=`<text class="axtext" x="${pad-9}" y="${H-34-(p-.5)*ch+4}" text-anchor="end">${p}</text>`;
+  s+=`<text class="axtext" x="${pad+(W-pad-22)/2}" y="${H-1}" text-anchor="middle">Impact →</text>
+      <text class="axtext" transform="translate(15,${(H-34)/2}) rotate(-90)" text-anchor="middle">Probability →</text></svg>`;
+  const rows=[];
+  for(let p=5;p>=1;p--) for(let i=5;i>=1;i--){ const n=cell(p,i); if(n) rows.push([p,i,p*i,n]); }
+  return chartCard(span||"s4","Open risk exposure","Probability × Impact, all open risks in scope",
+    s,simpleTable([{h:"Prob",cls:"num"},{h:"Impact",cls:"num"},{h:"Exposure",cls:"num"},{h:"Risks",cls:"num"}],rows));
+}
+
+/* --- EVM bars for one project --- */
+function evmChart(p){
+  const items=[
+    {label:"Budget (BAC)",v:p.BudgetAtCompletion,disp:money(p.BudgetAtCompletion),color:"var(--ord-1)",tip:"Total approved budget"},
+    {label:"Planned (PV)",v:p.PlannedValue,disp:money(p.PlannedValue),color:"var(--ord-2)",tip:"Budgeted cost of work scheduled to date"},
+    {label:"Earned (EV)",v:p.EarnedValue,disp:money(p.EarnedValue),color:"var(--ord-3)",tip:"Budgeted cost of work completed to date"},
+    {label:"Actual (AC)",v:p.ActualCost,disp:money(p.ActualCost),color:"var(--ord-4)",tip:"Spent to date"},
+    {label:"Forecast (EAC)",v:p.eac||0,disp:p.eac?money(p.eac):"—",color:"var(--ord-5)",tip:"BAC ÷ CPI — forecast total cost at current efficiency"}
+  ];
+  const tbl=simpleTable([{h:"Measure"},{h:"Value",cls:"num"},{h:"Meaning"}],[
+    ["Budget at completion (BAC)",money(p.BudgetAtCompletion),"Total approved budget"],
+    ["Planned value (PV)",money(p.PlannedValue),"Work scheduled to date"],
+    ["Earned value (EV)",money(p.EarnedValue),"Work completed to date"],
+    ["Actual cost (AC)",money(p.ActualCost),"Spent to date"],
+    ["Schedule variance (SV)",money(p.sv),"EV − PV. Negative = behind schedule"],
+    ["Cost variance (CV)",money(p.cv),"EV − AC. Negative = over budget"],
+    ["Estimate at completion (EAC)",p.eac?money(p.eac):"—","BAC ÷ CPI"],
+    ["Variance at completion (VAC)",p.vac!=null?money(p.vac):"—","BAC − EAC. Negative = forecast overrun"]
+  ]);
+  return chartCard("s6","Earned value analysis","PMI earned-value measures, as at "+CFG.ReportingDate,
+    barH(items,{w:560,padL:132}),tbl);
+}
+
+/* --- milestone timeline --- */
+function milestoneChart(p){
+  const ms=p.milestones;
+  if(!ms.length) return chartCard("s6","Milestones","",'<div class="empty">No milestones recorded for this project.</div>',null);
+  const all=ms.flatMap(m=>[dparse(m.BaselineDate),dparse(m.ForecastDate)]).filter(Boolean);
+  const t0=Math.min(...all), t1=Math.max(...all), span=Math.max(1,t1-t0);
+  const W=560,rowH=27,padL=182,padR=52,top=22,H=top+ms.length*rowH+26;
+  const X=d=>padL+((dparse(d)-t0)/span)*(W-padL-padR);
+  const now=dparse(CFG.ReportingDate);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img">`;
+  if(now>=t0&&now<=t1){
+    const nx=padL+((now-t0)/span)*(W-padL-padR);
+    s+=`<line class="baseline" x1="${nx}" y1="${top-8}" x2="${nx}" y2="${H-24}"/>
+        <text class="axtext" x="${nx}" y="${top-12}" text-anchor="middle">today</text>`;
+  }
+  ms.forEach((m,i)=>{
+    const y=top+i*rowH+11;
+    const bx=X(m.BaselineDate), fx=X(m.ForecastDate);
+    const late=!m.ActualDate && dparse(m.ForecastDate)<now;
+    const col=m.ActualDate?"var(--st-good)":(late?"var(--st-crit)":"var(--ord-3)");
+    s+=`<text class="axtext" x="${padL-16}" y="${y+4}" text-anchor="end">${esc(m.MilestoneName)}</text>`;
+    if(Math.abs(fx-bx)>1.5)
+      s+=`<line x1="${bx}" y1="${y}" x2="${fx}" y2="${y}" stroke="var(--axis)" stroke-width="2"/>`;
+    s+=`<circle cx="${bx}" cy="${y}" r="4" fill="none" stroke="var(--axis)" stroke-width="2"
+          data-tip="<b>${esc(m.MilestoneName)}</b><br>Baseline ${esc(m.BaselineDate)}"/>
+        <circle cx="${fx}" cy="${y}" r="5.5" fill="${col}" stroke="var(--surface-1)" stroke-width="2"
+          data-tip="<b>${esc(m.MilestoneName)}</b><br>${m.ActualDate?"Actual "+esc(m.ActualDate):"Forecast "+esc(m.ForecastDate)}<br>Baseline ${esc(m.BaselineDate)}<br>Status: ${esc(m.Status)}"/>`;
+    const dd=days(m.BaselineDate,m.ForecastDate);
+    if(dd!=null&&dd!==0) s+=`<text class="dlabel" x="${Math.max(bx,fx)+9}" y="${y+4}">${dd>0?"+":""}${dd}d</text>`;
+  });
+  s+=`<text class="axtext" x="${padL}" y="${H-6}">${new Date(t0).toISOString().slice(0,10)}</text>
+      <text class="axtext" x="${W-padR}" y="${H-6}" text-anchor="end">${new Date(t1).toISOString().slice(0,10)}</text></svg>`;
+  const tbl=simpleTable([{h:"Milestone"},{h:"Baseline"},{h:"Forecast"},{h:"Actual"},{h:"Slip (d)",cls:"num"},{h:"Status"}],
+    ms.map(m=>[esc(m.MilestoneName),esc(m.BaselineDate),esc(m.ForecastDate),esc(m.ActualDate||"—"),
+               days(m.BaselineDate,m.ForecastDate)??"—",esc(m.Status)]));
+  return chartCard("s6","Milestone schedule","Hollow marker = baseline, solid = forecast or actual",s,tbl,
+    `<div class="legend">
+      <span><i style="background:var(--st-good)"></i>Complete</span>
+      <span><i style="background:var(--ord-3)"></i>Planned</span>
+      <span><i style="background:var(--st-crit)"></i>Overdue</span></div>`);
+}
+
+/* =======================================================================
+   6. SHARED BLOCKS
+   ======================================================================= */
+function tiles(r,label){
+  const vacBad = r.vac!=null && r.vac<0;
+  return `<div class="tiles">
+    <div class="tile"><div class="lbl">${esc(label||"Projects")}</div><div class="val">${r.n}</div>
+      <div class="note">${r.rag.g} green · ${r.rag.a} amber · ${r.rag.r} red
+        ${r.n>1?`${ragChip(r.ragDeliv)}<br><span class="muted">${pct(r.redShare)} of live projects red</span>`:""}</div>
+      <div class="ragstrip">
+        ${r.rag.g?`<i style="flex:${r.rag.g};background:var(--st-good)"></i>`:""}
+        ${r.rag.a?`<i style="flex:${r.rag.a};background:var(--st-warn)"></i>`:""}
+        ${r.rag.r?`<i style="flex:${r.rag.r};background:var(--st-crit)"></i>`:""}
+        ${r.rag.na?`<i style="flex:${r.rag.na};background:var(--st-na)"></i>`:""}
+      </div></div>
+    <div class="tile"><div class="lbl">Approved budget</div><div class="val">${money(r.bac)}</div>
+      <div class="note">Budget at completion</div></div>
+    <div class="tile"><div class="lbl">Actual cost</div><div class="val">${money(r.ac)}</div>
+      <div class="note">${r.bac?pct(r.ac/r.bac):"—"} of approved budget spent</div></div>
+    <div class="tile"><div class="lbl">Forecast at completion</div><div class="val">${r.eac?money(r.eac):"—"}</div>
+      <div class="note ${vacBad?"bad":"good"}">${r.vac!=null?(r.vac<0?money(Math.abs(r.vac))+" forecast overrun":money(r.vac)+" forecast underrun"):"—"}</div></div>
+    <div class="tile"><div class="lbl">Schedule index</div><div class="val sm">${idx(r.spi)} ${ragChip(r.ragSched)}</div>
+      <div class="note">SPI — ${r.spi==null?"not started":(r.spi<1?"behind schedule":"at or ahead of schedule")}</div></div>
+    <div class="tile"><div class="lbl">Cost index</div><div class="val sm">${idx(r.cpi)} ${ragChip(r.ragCost)}</div>
+      <div class="note">CPI — ${r.cpi==null?"no spend":(r.cpi<1?"over budget":"at or under budget")}</div></div>
+    <div class="tile"><div class="lbl">Open risks</div><div class="val">${r.risks}</div>
+      <div class="note">${r.riskRed} of ${r.scored} project(s) red on risk ${ragChip(r.ragRisk)}</div></div>
+    <div class="tile"><div class="lbl">Open issues</div><div class="val">${r.issues}</div>
+      <div class="note ${r.crit?"bad":""}">${r.crit} critical or high</div></div>
+  </div>`;
+}
+
+function drillCards(items,kind){
+  if(!items.length) return `<div class="empty">Nothing matches the current filters.</div>`;
+  return `<div class="drills">${items.map(it=>{
+    const r=roll(filtered(it.projects));
+    const tot=Math.max(1,r.n);
+    return `<button class="drill" data-go="#/${kind}/${esc(it.id)}">
+      <div class="dh">${ragChip(r.ragAll)}<span class="dn">${esc(it.name)}</span></div>
+      <div class="dm">${esc(it.meta)}</div>
+      <div class="bars">
+        ${r.rag.g?`<i style="flex:${r.rag.g/tot};background:var(--st-good)"></i>`:""}
+        ${r.rag.a?`<i style="flex:${r.rag.a/tot};background:var(--st-warn)"></i>`:""}
+        ${r.rag.r?`<i style="flex:${r.rag.r/tot};background:var(--st-crit)"></i>`:""}
+        ${r.rag.na?`<i style="flex:${r.rag.na/tot};background:var(--st-na)"></i>`:""}
+      </div>
+      <dl>
+        <div><dt>Projects</dt><dd>${r.n}</dd></div>
+        <div><dt>Budget</dt><dd>${money(r.bac)}</dd></div>
+        <div><dt>Complete</dt><dd>${pct(r.pctComplete)}</dd></div>
+        <div><dt>SPI / CPI</dt><dd>${idx(r.spi)} / ${idx(r.cpi)}</dd></div>
+      </dl></button>`;
+  }).join("")}</div>`;
+}
+
+let sortState={key:"ragAll",dir:-1};
+function projectTable(projects,title){
+  if(!projects.length) return `<section class="card s12"><div class="card-head"><div><h3>${esc(title)}</h3></div></div>
+    <div class="empty">No projects match the current filters.</div></section>`;
+  const cols=[
+    {k:"ProjectName",h:"Project"},{k:"ProjectManager",h:"Manager"},{k:"Department",h:"Dept"},
+    {k:"Phase",h:"Phase"},{k:"StartDate",h:"Start"},{k:"ForecastFinish",h:"Forecast finish"},
+    {k:"slip",h:"Slip (d)",cls:"num"},{k:"PercentComplete",h:"% Cmpl",cls:"num"},
+    {k:"BudgetAtCompletion",h:"Budget",cls:"num"},{k:"spi",h:"SPI",cls:"num"},{k:"cpi",h:"CPI",cls:"num"},
+    {k:"ragCost",h:"Cost",cls:"ctr"},{k:"ragRisk",h:"Risk",cls:"ctr"},
+    {k:"ragSched",h:"Sched",cls:"ctr"},{k:"ragAll",h:"Overall",cls:"ctr"}
+  ];
+  const rows=projects.slice().sort((a,b)=>{
+    const k=sortState.key; let x=a[k],y=b[k];
+    if(k.startsWith("rag")){ x=RANK[x]; y=RANK[y]; }
+    if(x==null) x=-Infinity; if(y==null) y=-Infinity;
+    return (typeof x==="string"?String(x).localeCompare(String(y)):x-y)*sortState.dir;
+  });
+  return `<section class="card s12">
+    <div class="card-head"><div><h3>${esc(title)}</h3>
+      <p class="sub">${rows.length} project(s) in scope. Click any row to open its dashboard. Click a column heading to sort.</p></div></div>
+    <div class="twrap"><table><thead><tr>
+      ${cols.map(c=>`<th class="${c.cls||""}" data-sort="${c.k}">${esc(c.h)}${sortState.key===c.k?(sortState.dir>0?" ▲":" ▼"):""}</th>`).join("")}
+    </tr></thead><tbody>
+      ${rows.map(p=>`<tr class="clickable" data-go="#/project/${esc(p.ProjectID)}">
+        <td class="tname">${esc(p.ProjectName)}</td>
+        <td>${esc(p.ProjectManager)}</td>
+        <td><span class="tag">${esc(p.Department)}</span></td>
+        <td class="muted">${esc(PHASE_SHORT[p.phaseIdx]||p.Phase)}</td>
+        <td class="muted">${esc(p.StartDate)}</td>
+        <td class="muted">${esc(p.ForecastFinish)}</td>
+        <td class="num" style="${p.slip>0?"color:var(--st-crit)":""}">${p.slip==null?"—":(p.slip>0?"+"+p.slip:p.slip)}</td>
+        <td class="num">${pct(p.PercentComplete)}</td>
+        <td class="num">${money(p.BudgetAtCompletion)}</td>
+        <td class="num">${idx(p.spi)}</td>
+        <td class="num">${idx(p.cpi)}</td>
+        <td class="ctr">${ragChip(p.ragCost)}</td>
+        <td class="ctr">${ragChip(p.ragRisk)}</td>
+        <td class="ctr">${ragChip(p.ragSched)}</td>
+        <td class="ctr">${ragChip(p.ragAll)}</td></tr>`).join("")}
+    </tbody></table></div></section>`;
+}
+
+function attentionCard(projects){
+  const worstFirst=projects.filter(p=>p.ragAll==="r"||p.ragAll==="a")
+    .sort((a,b)=>(RANK[b.ragAll]-RANK[a.ragAll]) || (b.BudgetAtCompletion-a.BudgetAtCompletion)).slice(0,8);
+  if(!worstFirst.length) return `<section class="card s4"><div class="card-head"><div>
+    <h3>Needs attention</h3><p class="sub">Highest-value projects off track</p></div></div>
+    <div class="empty">Nothing amber or red in scope.</div></section>`;
+  return `<section class="card s4"><div class="card-head"><div><h3>Needs attention</h3>
+    <p class="sub">Amber and red, largest budget first</p></div></div>
+    <div class="twrap"><table><tbody>
+    ${worstFirst.map(p=>{
+      const drivers=[["Cost",p.ragCost],["Schedule",p.ragSched],["Risk",p.ragRisk]]
+        .filter(([,v])=>v===p.ragAll).map(([k])=>k).join(" + ");
+      return `<tr class="clickable" data-go="#/project/${esc(p.ProjectID)}">
+      <td class="ctr" style="width:26px">${ragChip(p.ragAll)}</td>
+      <td><div class="tname">${esc(p.ProjectName)}</div>
+        <div class="muted" style="font-size:11px">${esc(p.ProjectManager)} · ${money(p.BudgetAtCompletion)}
+        ${p.slip>0?` · <span style="color:var(--st-crit)">${p.slip}d late</span>`:""}</div>
+        <div style="font-size:11px;margin-top:2px"><span class="muted">driven by</span>
+          <b style="color:${RAGCOL[p.ragAll]}">${esc(drivers||"—")}</b></div></td>
+      <td class="num muted">SPI ${idx(p.spi)}<br>CPI ${idx(p.cpi)}<br>Risk ${p.maxExposure??"—"}</td></tr>`;}).join("")}
+    </tbody></table></div></section>`;
+}
+
+function healthCard(){
+  const items = PROBLEMS.length
+    ? PROBLEMS.map(p=>`<li>⚠ ${esc(p)}</li>`).join("")
+    : `<li>✓ <b>All references resolve.</b> Every portfolio, program, project and child row links to a valid parent.</li>`;
+  return `<section class="card s4"><div class="card-head"><div><h3>Data health</h3>
+    <p class="sub">Checked on load — fix these in the workbook, not here</p></div></div>
+    <ul class="health" style="margin:0;padding-left:18px">${items}
+    <li class="muted">Reporting date <b>${esc(CFG.ReportingDate)}</b> · currency <b>${esc(CFG.Currency)}</b>
+      · thresholds CPI ${CFG.CPI_Green}/${CFG.CPI_Amber}, SPI ${CFG.SPI_Green}/${CFG.SPI_Amber},
+      risk ${CFG.Risk_Green}/${CFG.Risk_Amber}</li></ul></section>`;
+}
+
+/* =======================================================================
+   7. VIEWS
+   ======================================================================= */
+function viewOrg(){
+  const ps=filtered(DATA.projects), r=roll(ps);
+
+  /* With a single apex priority, drilling through a one-item level wastes a click and a
+     one-bar bar chart is meaningless — so both the budget chart and the drill cards drop
+     to the portfolio level automatically. With several priorities they stay at priority level. */
+  const single = DATA.priorities.length===1;
+  const nodes = single
+    ? DATA.portfolios.map(pf=>({id:pf.PortfolioID,name:pf.PortfolioName,projects:pf.projects,
+        meta:`Owner ${pf.PortfolioOwner} · ${pf.Department} · ${pf.programs.length} program(s)`}))
+    : DATA.priorities.map(pr=>({id:pr.PriorityID,name:pr.PriorityName,projects:pr.projects,
+        meta:`Sponsor ${pr.ExecutiveSponsor} · ${pr.portfolios.length} portfolio(s) · ${pct(pr.WeightPct)} of strategic weight`}));
+  const kind = single?"portfolio":"priority";
+  const word = single?"portfolio":"priority";
+
+  const apex = single ? `<section class="card s12" style="border-color:var(--cat-1)">
+      <div class="card-head"><div>
+        <h3 style="font-size:15px">${esc(DATA.priorities[0].PriorityName)}</h3>
+        <p class="sub">${esc(DATA.priorities[0].Description||"")}
+          &nbsp;·&nbsp; Sponsor ${esc(DATA.priorities[0].ExecutiveSponsor||"—")}</p></div>
+        <div class="spacer"></div>
+        <button class="btn" data-go="#/priority/${esc(DATA.priorities[0].PriorityID)}">Open priority view →</button>
+      </div></section>` : "";
+
+  return tiles(r,"Projects in scope")
+    + `<div class="grid">`
+    + apex
+    + phaseFunnel(ps)
+    + budgetBar(nodes,"s4","Approved budget by "+word,"Where the money is committed")
+    + healthCard()
+    + sankey(ps) + attentionCard(ps)
+    + quadrant(ps,"s8") + riskMatrix(ps.flatMap(p=>p.openRisks),"s4")
+    + `<section class="card s12"><div class="card-head"><div>
+        <h3>${single?"Portfolios":"Organisational priorities"}</h3>
+        <p class="sub">Click a ${word} to drill into the level below</p></div></div>
+        ${drillCards(nodes,kind)}</section>`
+    + `</div>`
+    + `<div class="grid" style="margin-top:14px">${projectTable(ps,"All projects")}</div>`;
+}
+
+function viewLevel(kind,node,children,childKind,title,meta,childLabel){
+  const ps=filtered(node.projects), r=roll(ps);
+  return tiles(r) + `<div class="grid">`
+    + phaseFunnel(ps)
+    + quadrant(ps,"s8")
+    + riskMatrix(ps.flatMap(p=>p.openRisks),"s4")
+    + budgetBar(children,"s4","Approved budget by "+childLabel,"Where the money is committed")
+    + attentionCard(ps)
+    + `<section class="card s12"><div class="card-head"><div><h3>${esc(title)}</h3>
+        <p class="sub">${esc(meta)}</p></div></div>
+        ${drillCards(children,childKind)}</section>`
+    + `</div><div class="grid" style="margin-top:14px">${projectTable(ps,"Projects in this "+kind)}</div>`;
+}
+
+function viewProject(p){
+  const openR=p.openRisks.slice().sort((a,b)=>b.exposure-a.exposure);
+  const openI=p.openIssues.slice();
+  const sevRank={critical:0,high:1,medium:2,low:3};
+  openI.sort((a,b)=>(sevRank[String(a.Severity).toLowerCase()]??9)-(sevRank[String(b.Severity).toLowerCase()]??9));
+  const vacBad=p.vac!=null&&p.vac<0;
+
+  const head=`<div class="tiles">
+    <div class="tile"><div class="lbl">Overall status</div>
+      <div class="val sm">${ragText(p.ragAll)}</div>
+      <div class="note">Worst of cost, schedule and risk</div></div>
+    <div class="tile"><div class="lbl">Complete</div><div class="val">${pct(p.PercentComplete)}</div>
+      <div class="note">${p.msDone} of ${p.milestones.length} milestones done</div></div>
+    <div class="tile"><div class="lbl">Budget</div><div class="val">${money(p.BudgetAtCompletion)}</div>
+      <div class="note">${money(p.ActualCost)} spent to date</div></div>
+    <div class="tile"><div class="lbl">Forecast (EAC)</div><div class="val">${p.eac?money(p.eac):"—"}</div>
+      <div class="note ${vacBad?"bad":"good"}">${p.vac!=null?(p.vac<0?money(Math.abs(p.vac))+" overrun":money(p.vac)+" underrun"):"—"}</div></div>
+    <div class="tile"><div class="lbl">Schedule (SPI)</div><div class="val sm">${idx(p.spi)} ${ragChip(p.ragSched)}</div>
+      <div class="note">${p.slip==null?"—":(p.slip>0?p.slip+" days later than baseline":Math.abs(p.slip)+" days inside baseline")}</div></div>
+    <div class="tile"><div class="lbl">Cost (CPI)</div><div class="val sm">${idx(p.cpi)} ${ragChip(p.ragCost)}</div>
+      <div class="note">${money(p.cv)} cost variance</div></div>
+    <div class="tile"><div class="lbl">Open risks</div><div class="val">${p.openRisks.length} ${ragChip(p.ragRisk)}</div>
+      <div class="note">Peak exposure ${p.maxExposure??"—"} of 25</div></div>
+    <div class="tile"><div class="lbl">Open issues</div><div class="val">${p.openIssues.length}</div>
+      <div class="note ${p.critIssues.length?"bad":""}">${p.critIssues.length} critical or high</div></div>
+  </div>`;
+
+  const facts=`<section class="card s12"><div class="card-head"><div>
+      <h3>${esc(p.ProjectName)}</h3>
+      <p class="sub">${esc(p.BusinessCase||"")}</p></div></div>
+    <div class="drills" style="grid-template-columns:repeat(auto-fill,minmax(178px,1fr))">
+      ${[["Project ID",p.ProjectID],["Manager",p.ProjectManager],["Sponsor",p.Sponsor],
+         ["Department",p.Department],["Phase",p.Phase],["Status",p.Status],
+         ["Start",p.StartDate],["Baseline finish",p.BaselineFinish],["Forecast finish",p.ForecastFinish]]
+        .map(([k,v])=>`<div><dt style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600">${esc(k)}</dt>
+          <dd style="margin:2px 0 0;font-size:13.5px;font-weight:550">${esc(v||"—")}</dd></div>`).join("")}
+    </div></section>`;
+
+  const risksTbl=`<section class="card s8"><div class="card-head"><div><h3>Risk register</h3>
+    <p class="sub">${openR.length} open, highest exposure first</p></div></div>
+    ${openR.length?`<div class="twrap"><table><thead><tr>
+      <th>Risk</th><th>Category</th><th class="num">P</th><th class="num">I</th>
+      <th class="num">Exp.</th><th>Response</th><th>Status</th></tr></thead><tbody>
+      ${openR.map(r=>`<tr><td>${esc(r.RiskTitle)}</td><td><span class="tag">${esc(r.Category)}</span></td>
+        <td class="num">${num(r.Probability)}</td><td class="num">${num(r.Impact)}</td>
+        <td class="num" style="font-weight:650;${r.exposure>CFG.Risk_Amber?"color:var(--st-crit)":(r.exposure>CFG.Risk_Green?"color:var(--st-warn)":"")}">${r.exposure}</td>
+        <td>${esc(r.Response)}</td><td class="muted">${esc(r.Status)}</td></tr>`).join("")}
+      </tbody></table></div>`:`<div class="empty">No open risks.</div>`}</section>`;
+
+  const issuesTbl=`<section class="card s12"><div class="card-head"><div><h3>Issue log</h3>
+    <p class="sub">${openI.length} open, most severe first</p></div></div>
+    ${openI.length?`<div class="twrap"><table><thead><tr>
+      <th>Issue</th><th>Severity</th><th>Owner</th><th>Raised</th><th>Target</th><th>Status</th></tr></thead><tbody>
+      ${openI.map(i=>{const sev=String(i.Severity).toLowerCase();
+        const col=sev==="critical"?"var(--st-crit)":sev==="high"?"var(--st-serious)":"";
+        return `<tr><td>${esc(i.IssueTitle)}</td>
+        <td><span class="tag" style="${col?`color:${col};border-color:${col}`:""}">${esc(i.Severity)}</span></td>
+        <td>${esc(i.Owner)}</td><td class="muted">${esc(i.RaisedDate)}</td>
+        <td class="muted">${esc(i.TargetDate)}</td><td class="muted">${esc(i.Status)}</td></tr>`;}).join("")}
+      </tbody></table></div>`:`<div class="empty">No open issues.</div>`}</section>`;
+
+  const lessons=p.lessons.length?`<section class="card s12"><div class="card-head"><div><h3>Lessons learned</h3>
+    <p class="sub">Captured on this project</p></div></div>
+    <div class="twrap"><table><thead><tr><th>Category</th><th>Lesson</th><th>Recommendation</th><th>Captured</th></tr></thead>
+    <tbody>${p.lessons.map(l=>`<tr><td><span class="tag">${esc(l.Category)}</span></td>
+      <td>${esc(l.Lesson)}</td><td>${esc(l.Recommendation)}</td>
+      <td class="muted">${esc(l.DateCaptured)}</td></tr>`).join("")}</tbody></table></div></section>`:"";
+
+  return head + `<div class="grid">` + facts + evmChart(p) + milestoneChart(p)
+       + riskMatrix(p.openRisks) + risksTbl + issuesTbl + lessons + `</div>`;
+}
+
+/* =======================================================================
+   7b. NAVIGATOR — persistent hierarchy map above every screen
+   ======================================================================= */
+const nav = {mode:"cascade", collapsed:false, userSet:false, mtxCols:"phase"};
+
+/* Resolve the current route into the four hierarchy levels. */
+function pathFor(route){
+  const o={pri:null,pf:null,pg:null,pj:null};
+  const {kind,id}=route;
+  if(kind==="priority") o.pri=DATA.byPri[id]||null;
+  if(kind==="portfolio"){ o.pf=DATA.byPf[id]||null; o.pri=o.pf&&o.pf.priority; }
+  if(kind==="program"){ o.pg=DATA.byPg[id]||null; o.pf=o.pg&&o.pg.portfolio; o.pri=o.pf&&o.pf.priority; }
+  if(kind==="project"){
+    o.pj=DATA.projects.find(p=>p.ProjectID===id)||null;
+    o.pg=o.pj&&DATA.byPg[o.pj.ProgramID]; o.pf=o.pg&&o.pg.portfolio; o.pri=o.pf&&o.pf.priority;
+  }
+  if(!o.pri && DATA.priorities.length===1) o.pri=DATA.priorities[0];
+  return o;
+}
+
+function cItem(sel,onPath,href,name,rag,left,right,leaf){
+  return `<button class="citem${sel?" sel":(onPath?" onpath":"")}" data-go="${href}"
+      title="${esc(name)}">
+    ${ragChip(rag)}
+    <span class="cn">${esc(name)}</span>
+    ${left?`<span class="cm">${esc(left)}</span>`:""}
+    ${right?`<span class="cv">${esc(right)}</span>`:""}
+    ${leaf?"":`<span class="chev">›</span>`}
+  </button>`;
+}
+
+function navCascade(path){
+  const col=(label,count,items)=>`<div class="ccol">
+    <div class="chd">${esc(label)}<span class="n">${count}</span></div>
+    <div class="clist">${items||`<div class="cempty">Select one to the left</div>`}</div></div>`;
+
+  // 1. Vision
+  const visions=DATA.priorities.map(pr=>{
+    const r=roll(filtered(pr.projects));
+    return cItem(path.pri&&path.pri.PriorityID===pr.PriorityID,false,
+      "#/priority/"+pr.PriorityID,pr.PriorityName,r.ragAll,r.n+" proj",moneyC(r.bac));
+  }).join("");
+
+  // 2. Portfolios — of the selected vision, else all
+  const pfs=(path.pri?path.pri.portfolios:DATA.portfolios);
+  const pfHtml=pfs.map(pf=>{
+    const r=roll(filtered(pf.projects));
+    return cItem(path.pf&&path.pf.PortfolioID===pf.PortfolioID,false,
+      "#/portfolio/"+pf.PortfolioID,pf.PortfolioName,r.ragAll,r.n+" proj",moneyC(r.bac));
+  }).join("");
+
+  // 3. Programs — of the selected portfolio, else all in scope
+  const pgs=path.pf?path.pf.programs:pfs.flatMap(p=>p.programs);
+  const pgHtml=pgs.map(pg=>{
+    const r=roll(filtered(pg.projects));
+    return cItem(path.pg&&path.pg.ProgramID===pg.ProgramID,false,
+      "#/program/"+pg.ProgramID,pg.ProgramName,r.ragAll,r.n+" proj",moneyC(r.bac));
+  }).join("");
+
+  // 4. Projects — of the selected program, else all in scope
+  const pjs=filtered(path.pg?path.pg.projects:pgs.flatMap(p=>p.projects));
+  const pjHtml=pjs.map(p=>cItem(path.pj&&path.pj.ProjectID===p.ProjectID,false,
+      "#/project/"+p.ProjectID,p.ProjectName,p.ragAll,pct(p.PercentComplete),
+      moneyC(p.BudgetAtCompletion),true)).join("");
+
+  return `<div class="cascade">
+    ${col("Vision",DATA.priorities.length,visions)}
+    ${col("Portfolios",pfs.length,pfHtml)}
+    ${col("Programs",pgs.length,pgHtml)}
+    ${col("Projects",pjs.length,pjHtml)}
+  </div>`;
+}
+
+/* Icicle: the whole hierarchy as one proportional strip. Width = budget share,
+   colour = RAG, the current path stays bright while everything else recedes. */
+function navMap(path){
+  const W=1200,rowH=30,gap=3,padT=15;
+  const rows=[
+    {label:"VISION",     nodes:DATA.priorities.map(x=>({key:"pri:"+x.PriorityID,name:x.PriorityName,
+        projects:x.projects,href:"#/priority/"+x.PriorityID,parent:null}))},
+    {label:"PORTFOLIOS", nodes:DATA.portfolios.map(x=>({key:"pf:"+x.PortfolioID,name:x.PortfolioName,
+        projects:x.projects,href:"#/portfolio/"+x.PortfolioID,parent:"pri:"+x.PriorityID}))},
+    {label:"PROGRAMS",   nodes:DATA.programs.map(x=>({key:"pg:"+x.ProgramID,name:x.ProgramName,
+        projects:x.projects,href:"#/program/"+x.ProgramID,parent:"pf:"+x.PortfolioID}))},
+    {label:"PROJECTS",   nodes:DATA.projects.map(x=>({key:"pj:"+x.ProjectID,name:x.ProjectName,
+        projects:[x],href:"#/project/"+x.ProjectID,parent:"pg:"+x.ProgramID}))}
+  ];
+  const onPath=new Set();
+  if(path.pri) onPath.add("pri:"+path.pri.PriorityID);
+  if(path.pf)  onPath.add("pf:"+path.pf.PortfolioID);
+  if(path.pg)  onPath.add("pg:"+path.pg.ProgramID);
+  if(path.pj)  onPath.add("pj:"+path.pj.ProjectID);
+  const deepest = path.pj?"pj:"+path.pj.ProjectID : path.pg?"pg:"+path.pg.ProgramID
+                : path.pf?"pf:"+path.pf.PortfolioID : path.pri?"pri:"+path.pri.PriorityID : null;
+
+  /* ZOOM. Strict proportional nesting cannot show 84 projects legibly across one strip —
+     the smallest would be sub-pixel. So the map scopes to where you are: the deepest
+     selected node fills the width and only its subtree is drawn. The projects row appears
+     once you are inside a portfolio or program, where there is room for it. */
+  const rootKey  = path.pg ? "pg:"+path.pg.ProgramID
+                 : path.pf ? "pf:"+path.pf.PortfolioID
+                 : path.pri? "pri:"+path.pri.PriorityID : null;
+  const rootLvl  = path.pg?2 : path.pf?1 : 0;
+  const showProj = !!(path.pf||path.pg);
+  const useRows  = rows.slice(0, showProj?4:3);
+
+  // which nodes survive the zoom, per row
+  const allow=[];
+  let cur=new Set([rootKey]);
+  for(let ri=rootLvl+1; ri<useRows.length; ri++){
+    const next=new Set();
+    useRows[ri].nodes.forEach(n=>{ if(cur.has(n.parent)) next.add(n.key); });
+    allow[ri]=next; cur=next;
+  }
+
+  const val=n=>{const f=filtered(n.projects); return f.reduce((a,b)=>a+b.BudgetAtCompletion,0)||0;};
+  const labelW=92, plotW=W-labelW-8;
+  let svg=`<svg viewBox="0 0 ${W} ${padT+useRows.length*(rowH+gap)}" width="100%"
+     height="${padT+useRows.length*(rowH+gap)}" role="img" style="display:block">`;
+  const xOf={};   // key -> [x0,w] so children align under their parent
+
+  useRows.forEach((row,ri)=>{
+    const y=padT+ri*(rowH+gap);
+    svg+=`<text class="axtext" x="0" y="${y+rowH/2+3.5}" style="font-weight:700;letter-spacing:.06em">${row.label}</text>`;
+    // group nodes by parent so each parent's children share its span
+    const groups={};
+    const pool = ri<=rootLvl
+      ? row.nodes.filter(n=>onPath.has(n.key))          // ancestors: single full-width band
+      : row.nodes.filter(n=>allow[ri] && allow[ri].has(n.key));
+    if(ri<=rootLvl) pool.forEach(n=>{ n=n; });
+    pool.forEach(n=>{
+      const par = ri<=rootLvl ? "_" : n.parent;
+      (groups[par||"_"]=groups[par||"_"]||[]).push(n);
+    });
+    Object.entries(groups).forEach(([par,list])=>{
+      const span = par==="_"||!xOf[par] ? [labelW,plotW] : xOf[par];
+      const tot=list.reduce((a,b)=>a+val(b),0);
+
+      /* Budget-proportional widths, but every node must stay visible and clickable.
+         Sub-minimum bands are raised to MINW and the surplus is taken proportionally
+         from the bands above it — standard icicle practice. Without this the smallest
+         projects render sub-pixel and cannot be clicked at all. */
+      const MINW=4.6;
+      let ws = list.map(n => tot>0 ? (val(n)/tot)*span[1] : span[1]/list.length);
+      if(span[1] >= list.length*MINW){
+        const deficit = ws.reduce((a,w)=>a+Math.max(0,MINW-w),0);
+        const surplus = ws.reduce((a,w)=>a+Math.max(0,w-MINW),0);
+        if(deficit>0 && surplus>0)
+          ws = ws.map(w => w<MINW ? MINW : w-(w-MINW)*(deficit/surplus));
+      } else ws = list.map(()=>span[1]/list.length);
+
+      let x=span[0];
+      list.forEach((n,ni)=>{
+        const w = ws[ni];
+        xOf[n.key]=[x,w];
+        const r=roll(filtered(n.projects));
+        /* Zoom has already removed everything out of scope, so nothing here is dimmed —
+           every band drawn is relevant. The current selection carries a ring instead. */
+        const sel = onPath.has(n.key);
+        const ink = (r.ragAll==="a"||r.ragAll==="na") ? "#3a2a00" : "#fff";
+        svg+=`<rect x="${x+0.5}" y="${y}" width="${Math.max(w-1,1.2)}" height="${rowH}" rx="2.5"
+          fill="${RAGCOL[r.ragAll]}" ${sel?'stroke="var(--ink-1)" stroke-width="1.6"':''}
+          style="cursor:pointer" data-go="${n.href}"
+          data-tip="<b>${esc(n.name)}</b><br>${r.n} project(s) · ${moneyC(r.bac)}<br>Status: ${RAGNAME[r.ragAll]}"/>`;
+        const cap=Math.floor((w-8)/6.4);
+        const txt = cap>=6 ? n.name : "";
+        if(txt) svg+=`<text x="${x+w/2}" y="${y+rowH/2+3.7}" text-anchor="middle"
+          style="font-size:10.5px;font-weight:600;pointer-events:none;fill:${ink}"
+          >${esc(txt.length>cap?txt.slice(0,cap-1)+"…":txt)}</text>`;
+        x+=w;
+      });
+    });
+  });
+  svg+=`</svg>`;
+  return `<div>${svg}
+    <div class="legend" style="margin-top:8px">
+      <span><i style="background:var(--st-good)"></i>Green</span>
+      <span><i style="background:var(--st-warn)"></i>Amber</span>
+      <span><i style="background:var(--st-crit)"></i>Red</span>
+      <span><i style="background:var(--st-na)"></i>Not started</span>
+      <span class="muted">Band width = share of approved budget · click any band to open it${
+        showProj?"":" · open a portfolio to reveal the projects row"}</span>
+    </div></div>`;
+}
+
+/* Matrix: the genuinely cross-cutting view. A Venn would be wrong here — the
+   hierarchy is strictly nested, nothing overlaps. What DOES cut across portfolios
+   is department and phase, so that is what this crosses. */
+function navMatrix(path){
+  const useDept = nav.mtxCols==="dept";
+  const cols = useDept
+    ? [...new Set(DATA.projects.map(p=>p.Department))].filter(Boolean).sort()
+    : PHASES;
+  const colLabel = useDept ? c=>c : c=>PHASE_SHORT[PHASES.indexOf(c)];
+  const key = useDept ? p=>p.Department : p=>p.Phase;
+  const rows = DATA.portfolios;
+
+  const cellOf=(pf,c)=>filtered(pf.projects).filter(p=>key(p)===c);
+  let max=1;
+  rows.forEach(pf=>cols.forEach(c=>{max=Math.max(max,cellOf(pf,c).length);}));
+
+  const head=`<tr><th class="rowh"></th>${cols.map(c=>`<th>${esc(colLabel(c))}</th>`).join("")}
+    <th style="color:var(--ink-2)">TOTAL</th></tr>`;
+  const body=rows.map(pf=>{
+    const rr=roll(filtered(pf.projects));
+    return `<tr>
+      <th class="rowh"><span class="ragtxt">${ragChip(rr.ragAll)}
+        <b style="font-size:11.5px;font-weight:600">${esc(pf.PortfolioName)}</b></span></th>
+      ${cols.map(c=>{
+        const set=cellOf(pf,c), n=set.length;
+        const red=set.filter(p=>p.ragAll==="r").length;
+        const bac=set.reduce((a,b)=>a+b.BudgetAtCompletion,0);
+        if(!n) return `<td><div class="mcell zero">·</div></td>`;
+        const step=Math.min(6,Math.max(1,Math.ceil((n/max)*6)));
+        const dark=step>=4;
+        return `<td><button class="mcell" style="background:${SEQ[step]};color:${dark?"#fff":"var(--ink-1)"}"
+          data-go="#/portfolio/${esc(pf.PortfolioID)}" data-setfilter="${useDept?"dept":"phase"}|${esc(c)}"
+          data-tip="<b>${esc(pf.PortfolioName)} · ${esc(colLabel(c))}</b><br>${n} project(s) · ${money(bac)}${red?`<br>${red} red`:""}">
+          ${n}<small>${moneyC(bac)}</small></button></td>`;
+      }).join("")}
+      <td><div class="mtot">${rr.n}<br><span class="muted">${moneyC(rr.bac)}</span></div></td></tr>`;
+  }).join("");
+  const foot=`<tr><th class="rowh" style="color:var(--ink-2)">TOTAL</th>
+    ${cols.map(c=>{const n=filtered(DATA.projects).filter(p=>key(p)===c).length;
+      return `<td><div class="mtot">${n}</div></td>`;}).join("")}
+    <td><div class="mtot">${filtered(DATA.projects).length}</div></td></tr>`;
+
+  return `<div>
+    <table class="mtx">${head}${body}${foot}</table>
+    <div class="legend" style="margin-top:9px">
+      <span class="muted">Shade = number of projects · click a cell to open that portfolio filtered to that ${useDept?"department":"phase"}</span>
+      <span style="margin-left:auto"><div class="seg">
+        <button data-mtxcol="phase" aria-pressed="${!useDept}">By phase</button>
+        <button data-mtxcol="dept" aria-pressed="${useDept}">By department</button>
+      </div></span>
+    </div></div>`;
+}
+
+function renderNav(route){
+  const path=pathFor(route);
+  if(!nav.userSet) nav.collapsed = (route.kind==="project");
+  const modes=[["cascade","Cascade"],["map","Map"],["matrix","Matrix"]];
+  const where=[path.pri&&path.pri.PriorityName,path.pf&&path.pf.PortfolioName,
+               path.pg&&path.pg.ProgramName,path.pj&&path.pj.ProjectName].filter(Boolean);
+  $("#navwrap").innerHTML=`
+    <div class="navhead">
+      <button class="btn" id="navtoggle" style="padding:4px 9px">${nav.collapsed?"▸":"▾"}</button>
+      <span class="lbl">Hierarchy</span>
+      ${nav.collapsed?`<span class="chip">${esc(where.join("  ›  ")||"All levels")}</span>`:""}
+      <div class="spacer"></div>
+      <div class="seg">${modes.map(([m,l])=>
+        `<button data-navmode="${m}" aria-pressed="${nav.mode===m}">${l}</button>`).join("")}</div>
+    </div>
+    <div class="navbody${nav.collapsed?" collapsed":""}">
+      ${nav.mode==="cascade"?navCascade(path):nav.mode==="map"?navMap(path):navMatrix(path)}
+    </div>`;
+}
+
+/* =======================================================================
+   8. ROUTING
+   ======================================================================= */
+function parseRoute(){
+  const h=location.hash||"#/";
+  const m=h.replace(/^#\/?/,"").split("/").filter(Boolean);
+  return {kind:m[0]||"org", id:m[1]||null};
+}
+
+function crumbsFor(route){
+  const c=[{label:"Organisation",href:"#/"}];
+  const {kind,id}=route;
+  if(kind==="priority"){ const n=DATA.byPri[id]; if(n) c.push({label:n.PriorityName}); }
+  if(kind==="portfolio"){ const n=DATA.byPf[id];
+    if(n){ const pr=n.priority; if(pr) c.push({label:pr.PriorityName,href:"#/priority/"+pr.PriorityID});
+           c.push({label:n.PortfolioName}); } }
+  if(kind==="program"){ const n=DATA.byPg[id];
+    if(n){ const pf=n.portfolio; const pr=pf&&pf.priority;
+           if(pr) c.push({label:pr.PriorityName,href:"#/priority/"+pr.PriorityID});
+           if(pf) c.push({label:pf.PortfolioName,href:"#/portfolio/"+pf.PortfolioID});
+           c.push({label:n.ProgramName}); } }
+  if(kind==="project"){ const p=DATA.projects.find(x=>x.ProjectID===id);
+    if(p){ const pg=DATA.byPg[p.ProgramID]; const pf=pg&&pg.portfolio; const pr=pf&&pf.priority;
+           if(pr) c.push({label:pr.PriorityName,href:"#/priority/"+pr.PriorityID});
+           if(pf) c.push({label:pf.PortfolioName,href:"#/portfolio/"+pf.PortfolioID});
+           if(pg) c.push({label:pg.ProgramName,href:"#/program/"+pg.ProgramID});
+           c.push({label:p.ProjectName}); } }
+  return c;
+}
+
+function render(){
+  const route=parseRoute();
+  renderNav(route);
+  const crumbs=crumbsFor(route);
+  $("#crumbs").innerHTML =
+    (crumbs.length>1?`<button class="btn" data-back="1" style="padding:4px 10px;margin-right:4px">← Back</button>`:"")
+    + crumbs.map((c,i)=> i===crumbs.length-1
+        ? `<span class="crumb here">${esc(c.label)}</span>`
+        : `<button class="crumb" data-go="${c.href}">${esc(c.label)}</button><span class="sep">›</span>`).join("");
+
+  const v=$("#view");
+  let html="";
+  if(route.kind==="priority"){
+    const n=DATA.byPri[route.id];
+    html = n ? viewLevel("priority",n,
+        n.portfolios.map(pf=>({id:pf.PortfolioID,name:pf.PortfolioName,
+          meta:`Owner ${pf.PortfolioOwner} · ${pf.Department} · ${pf.programs.length} program(s)`,projects:pf.projects})),
+        "portfolio","Portfolios in this priority",
+        `${n.Description||""} · Sponsor ${n.ExecutiveSponsor||"—"}`,"portfolio")
+      : `<div class="empty">Priority not found.</div>`;
+  } else if(route.kind==="portfolio"){
+    const n=DATA.byPf[route.id];
+    html = n ? viewLevel("portfolio",n,
+        n.programs.map(pg=>({id:pg.ProgramID,name:pg.ProgramName,
+          meta:`Manager ${pg.ProgramManager} · ${pg.projects.length} project(s)`,projects:pg.projects})),
+        "program","Programs in this portfolio",
+        `Owner ${n.PortfolioOwner||"—"} · ${n.Department||""}`,"program")
+      : `<div class="empty">Portfolio not found.</div>`;
+  } else if(route.kind==="program"){
+    const n=DATA.byPg[route.id];
+    if(n){
+      const ps=filtered(n.projects);
+      html = tiles(roll(ps)) + `<div class="grid">`
+        + phaseFunnel(ps) + quadrant(ps,"s8")
+        + riskMatrix(ps.flatMap(p=>p.openRisks),"s4")
+        + budgetBar(n.projects.map(p=>({id:p.ProjectID,name:p.ProjectName,projects:[p]})),
+                    "s4","Approved budget by project","Largest first")
+        + attentionCard(ps) + `</div>`
+        + `<div class="grid" style="margin-top:14px">${projectTable(ps,"Projects in "+n.ProgramName)}</div>`;
+    } else html=`<div class="empty">Program not found.</div>`;
+  } else if(route.kind==="project"){
+    const p=DATA.projects.find(x=>x.ProjectID===route.id);
+    html = p ? viewProject(p) : `<div class="empty">Project not found.</div>`;
+  } else {
+    html = viewOrg();
+  }
+  v.innerHTML=html;
+  v.scrollIntoView({block:"start"});
+  window.scrollTo({top:0});
+
+  const inScope = route.kind==="project" ? 1 : filtered(scopeProjects(route)).length;
+  $("#scopechip").textContent = anyFilter()
+    ? `${inScope} of ${scopeProjects(route).length} project(s) shown`
+    : `${scopeProjects(route).length} project(s) in scope`;
+}
+
+function scopeProjects(route){
+  if(route.kind==="priority"&&DATA.byPri[route.id]) return DATA.byPri[route.id].projects;
+  if(route.kind==="portfolio"&&DATA.byPf[route.id]) return DATA.byPf[route.id].projects;
+  if(route.kind==="program"&&DATA.byPg[route.id]) return DATA.byPg[route.id].projects;
+  if(route.kind==="project") return DATA.projects.filter(p=>p.ProjectID===route.id);
+  return DATA.projects;
+}
+
+/* =======================================================================
+   9. WIRING
+   ======================================================================= */
+function fillFilters(){
+  const depts=[...new Set(DATA.projects.map(p=>p.Department))].filter(Boolean).sort();
+  $("#fdept").innerHTML=`<option value="">All</option>`+depts.map(d=>`<option>${esc(d)}</option>`).join("");
+  $("#fphase").innerHTML=`<option value="">All</option>`+PHASES.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  $("#frag").innerHTML=`<option value="">All</option>`
+    +[["g","Green"],["a","Amber"],["r","Red"],["na","Not started"]].map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+  $("#fdept").value=state.dept; $("#fphase").value=state.phase; $("#frag").value=state.rag; $("#fq").value=state.q;
+  $("#asat").textContent="As at "+CFG.ReportingDate;
+}
+
+function boot(raw,label){
+  DATA=normalize(raw);
+  if(label) $("#srcnote").textContent=label;
+  fillFilters();
+  render();
+}
+
+/* --- events --- */
+document.addEventListener("click",e=>{
+  const back=e.target.closest("[data-back]");
+  if(back){ history.back(); return; }
+
+  const nm=e.target.closest("[data-navmode]");
+  if(nm){ nav.mode=nm.getAttribute("data-navmode"); nav.collapsed=false; nav.userSet=true;
+          renderNav(parseRoute()); return; }
+  const mc=e.target.closest("[data-mtxcol]");
+  if(mc){ nav.mtxCols=mc.getAttribute("data-mtxcol"); renderNav(parseRoute()); return; }
+  if(e.target.closest("#navtoggle")){ nav.collapsed=!nav.collapsed; nav.userSet=true;
+          renderNav(parseRoute()); return; }
+
+  const go=e.target.closest("[data-go]");
+  if(go){
+    const sf=go.getAttribute("data-setfilter");
+    if(sf){ const [k,v]=sf.split("|"); state[k]=v; fillFilters(); }
+    const h=go.getAttribute("data-go"); if(h){ location.hash=h; render(); }
+    return;
+  }
+  const tv=e.target.closest("[data-tv]");
+  if(tv){
+    const id=tv.getAttribute("data-tv"), on=tv.getAttribute("aria-pressed")==="true";
+    tv.setAttribute("aria-pressed",String(!on));
+    $("#"+id+"-chart").classList.toggle("hidden",!on);
+    $("#"+id+"-table").classList.toggle("hidden",on);
+    return;
+  }
+  const th=e.target.closest("th[data-sort]");
+  if(th){
+    const k=th.getAttribute("data-sort");
+    sortState = (sortState.key===k) ? {key:k,dir:-sortState.dir} : {key:k,dir:1};
+    render(); return;
+  }
+});
+
+["fdept","fphase","frag"].forEach(id=>$("#"+id).addEventListener("change",()=>{
+  state.dept=$("#fdept").value; state.phase=$("#fphase").value; state.rag=$("#frag").value; render();
+}));
+let qt; $("#fq").addEventListener("input",()=>{ clearTimeout(qt); qt=setTimeout(()=>{ state.q=$("#fq").value.trim(); render(); },180); });
+$("#clearf").addEventListener("click",()=>{ state.dept=state.phase=state.rag=state.q=""; fillFilters(); render(); });
+window.addEventListener("hashchange",render);
+
+/* theme */
+const themeBtn=$("#themebtn");
+function setTheme(t){ document.documentElement.setAttribute("data-theme",t); themeBtn.textContent = t==="dark"?"Light":"Dark"; }
+setTheme(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+themeBtn.addEventListener("click",()=>setTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark"));
+
+/* tooltip */
+const tip=$("#tip");
+document.addEventListener("mousemove",e=>{
+  const t=e.target.closest("[data-tip]");
+  if(!t){ tip.style.opacity=0; return; }
+  tip.innerHTML=t.getAttribute("data-tip");
+  tip.style.opacity=1;
+  const r=tip.getBoundingClientRect();
+  let x=e.clientX+14, y=e.clientY+14;
+  if(x+r.width>innerWidth-8) x=e.clientX-r.width-14;
+  if(y+r.height>innerHeight-8) y=e.clientY-r.height-14;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+});
+
+/* --- workbook loading --- */
+const SHEETS={Priorities:"priorities",Portfolios:"portfolios",Programs:"programs",Projects:"projects",
+              Milestones:"milestones",Risks:"risks",Issues:"issues",LessonsLearned:"lessons"};
+function loadScript(src){
+  return new Promise((ok,err)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=err; document.head.appendChild(s); });
+}
+async function readWorkbook(file){
+  if(typeof XLSX==="undefined"){
+    try{ await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"); }
+    catch(_){ alert("Could not load the spreadsheet reader. This step needs an internet connection the first time."); return; }
+  }
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{cellDates:true});
+  const out={config:{}};
+  const iso=v=>v instanceof Date ? new Date(v.getTime()-v.getTimezoneOffset()*6e4).toISOString().slice(0,10) : v;
+  for(const [sheet,key] of Object.entries(SHEETS)){
+    const ws=wb.Sheets[sheet];
+    out[key]= ws ? XLSX.utils.sheet_to_json(ws,{defval:""}).map(r=>{
+      const o={}; for(const k in r) o[String(k).trim()]=iso(r[k]); return o;
+    }) : [];
+  }
+  const cs=wb.Sheets["Config"];
+  if(cs) XLSX.utils.sheet_to_json(cs,{defval:""}).forEach(r=>{ if(r.Setting) out.config[String(r.Setting).trim()]=iso(r.Value); });
+  if(!out.projects.length){ alert("No rows found on a sheet named 'Projects'. Check the workbook uses the template's sheet names."); return; }
+  out.meta={generated:out.config.ReportingDate||""};
+  location.hash="#/";
+  boot(out,file.name);
+}
+$("#loadbtn").addEventListener("click",()=>$("#fileinput").click());
+$("#fileinput").addEventListener("change",e=>{ if(e.target.files[0]) readWorkbook(e.target.files[0]); });
+let dragDepth=0;
+addEventListener("dragenter",e=>{ e.preventDefault(); dragDepth++; $("#drop").classList.add("on"); });
+addEventListener("dragover",e=>e.preventDefault());
+addEventListener("dragleave",()=>{ if(--dragDepth<=0){ dragDepth=0; $("#drop").classList.remove("on"); } });
+addEventListener("drop",e=>{ e.preventDefault(); dragDepth=0; $("#drop").classList.remove("on");
+  const f=e.dataTransfer.files[0]; if(f) readWorkbook(f); });
+
+/* go */
+boot(RAW,"Sample data");
+</script>
+</body>
+</html>

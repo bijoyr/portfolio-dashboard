@@ -1,0 +1,16 @@
+{
+  "name": "portfolio-drilldown",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Executive portfolio drill-down: Vision to Portfolio to Program to Project",
+  "scripts": {
+    "data": "node scripts/py.js scripts/gen_data.py && node scripts/py.js scripts/build_xlsx.py",
+    "build": "node scripts/py.js scripts/build.py",
+    "all": "npm run data && npm run build",
+    "test": "node tests/regression.spec.js && node tests/verify_rollups.js",
+    "test:rollups": "node tests/verify_rollups.js",
+    "serve": "node scripts/py.js -m http.server 8000",
+    "postinstall": "node -e \"console.log('\\nNext: npm run all   (needs Python 3 + openpyxl:  pip install openpyxl)\\n')\""
+  },
+  "devDependencies": { "playwright": "^1.47.0" }
+}
