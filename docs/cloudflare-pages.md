@@ -62,18 +62,20 @@ Pages project at a time, so:
    Because the zone is in the same Cloudflare account, the DNS record is created automatically.
 3. Optional: attach the apex `trustfractals.com` too, or add a redirect rule apex → `www`.
 
-## Optional: branch protection (make CI a merge gate)
+## Protecting main
 
-To require the CI check to pass before anything reaches production:
+**Server-side** branch protection and rulesets require a public repo or GitHub Pro. This repo
+is private on the free plan, so neither is available — GitHub returns 403. The two ways to get
+a real server-side merge gate are to make the repo public or upgrade to Pro; do that and the
+check to require is `build-and-test`.
+
+Until then, protection is **client-side**, via a versioned pre-push hook that enforces the
+build-determinism invariant before anything reaches `main`. Enable it once per clone:
 
 ```bash
-gh api -X PUT repos/bijoyr/portfolio-dashboard/branches/main/protection \
-  -f 'required_status_checks[strict]=true' \
-  -f 'required_status_checks[contexts][]=build-and-test' \
-  -F 'enforce_admins=false' \
-  -F 'required_pull_request_reviews=null' \
-  -F 'restrictions=null'
+git config core.hooksPath .githooks
 ```
 
-This forces changes through a PR whose CI passes — worth it once more than one person, or
-one machine, touches the repo.
+The hook (`.githooks/pre-push`) rebuilds `index.html` and refuses the push if it no longer
+matches source — the most common mistake. The full test suite still runs remotely in CI on
+every PR; the hook is the fast local net. Bypass in an emergency with `git push --no-verify`.

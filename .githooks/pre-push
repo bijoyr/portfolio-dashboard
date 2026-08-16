@@ -1,0 +1,32 @@
+#!/bin/sh
+# Client-side gate for pushes to main.
+#
+# Server-side branch protection / rulesets need a public repo or GitHub Pro, which
+# this private free-tier repo has neither of. This hook is the local stand-in: it
+# enforces the build-determinism invariant before code can reach the production
+# branch, catching the single most common mistake — editing index.html by hand (or
+# forgetting to rebuild) instead of editing src/app.html and running the build.
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# The full test suite still runs remotely in CI on the PR; this is the fast local net.
+# Bypass in a genuine emergency with:  git push --no-verify
+
+gate=0
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+	[ "$remote_ref" = "refs/heads/main" ] && gate=1
+done
+[ "$gate" = "1" ] || exit 0
+
+echo "pre-push: verifying build determinism before pushing to main..."
+if ! npm run build >/dev/null 2>&1; then
+	echo "pre-push: 'npm run build' failed — fix the build before pushing." >&2
+	exit 1
+fi
+if ! git diff --quiet -- index.html; then
+	echo "pre-push: index.html does not match its source." >&2
+	echo "          Run 'npm run build' and commit the result (never hand-edit index.html)." >&2
+	git checkout -- index.html 2>/dev/null
+	exit 1
+fi
+echo "pre-push: OK — index.html matches source."
+exit 0
