@@ -25,6 +25,17 @@ Requires Python 3 with `openpyxl` (`pip install openpyxl`) and Node 18+.
 
 **Windows:** works as-is. The npm scripts go through `scripts/py.js`, which finds `py -3`, `python` or `python3` automatically. Installing [Git for Windows](https://git-scm.com/downloads/win) is recommended so Claude Code can use Bash rather than PowerShell.
 
+If `npm install` fails with `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, or `pip install` with
+`CERTIFICATE_VERIFY_FAILED`, that is this machine's antivirus TLS interception, not the project.
+`~/.npmrc` pins `cafile` to the Norton root, which replaces the default CA bundle rather than
+adding to it, so anything *not* being intercepted then fails to verify. Workarounds that do not
+touch global config:
+
+```bash
+npm install --userconfig /dev/null
+pip install --use-feature=truststore openpyxl
+```
+
 Nothing above is needed just to *use* the dashboard — only to rebuild it.
 
 ---

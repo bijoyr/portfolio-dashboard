@@ -41,6 +41,31 @@ npm run serve    # http://localhost:8000
 
 Python deps: `openpyxl` (Excel). Node deps: `playwright` (tests only). Neither is needed to *run* the dashboard.
 
+## Build reproducibility
+
+The build is deterministic: `gen_data.py` is seeded (`random.seed(20260816)`) with a fixed
+`TODAY`, so `npm run all` reproduces `index.html` and the workbook **byte for byte**. After a
+rebuild with no source change, `git status` must be clean. If it isn't, something has
+introduced nondeterminism — find it rather than committing the diff.
+
+Three things keep it that way. Do not undo them:
+
+1. **Every Python file read/write passes `encoding="utf-8"`.** Windows defaults to cp1252 and
+   `src/app.html` contains the RAG glyphs, so the default breaks the build outright and would
+   silently corrupt non-ASCII data on the way into the JSON.
+2. **`build.py` writes with `newline="\n"`,** and `.gitattributes` pins `eol=lf`. Without both,
+   Windows rewrites all 1,528 line endings and every build reads as a full-file diff.
+3. **`build_xlsx.py` freezes the workbook timestamps** (`freeze_timestamps`). An xlsx is a zip;
+   openpyxl stamps every entry with "now", making each rebuild a 72 KB binary diff with an
+   identical payload. That noise is what buries real changes in the snapshot history.
+
+## Snapshots
+
+`snapshots/YYYY-MM-DD.xlsx` — dated copies of the workbook, committed periodically. This is the
+one thing that cannot be retrofitted: every trend, velocity and forecasting feature needs
+history, and history not captured is gone. Add a new dated copy whenever the data changes
+materially; never overwrite an existing one.
+
 ---
 
 ## Hard constraints

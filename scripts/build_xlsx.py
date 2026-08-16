@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the PMP-aligned Excel data template from the generated sample dataset."""
 import json
+import datetime as dt
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -23,6 +24,10 @@ IDX = '0.00'
 DATE = 'yyyy-mm-dd'
 
 wb = Workbook()
+# Pin the document timestamps to the dataset's reporting date. openpyxl otherwise
+# stamps "now", which makes every rebuild a 72 KB binary diff with identical content.
+wb.properties.created = wb.properties.modified = dt.datetime.fromisoformat(
+    D["meta"]["generated"])
 
 
 def sheet(name, headers, rows, calc_from=None, widths=None, formats=None, freeze="A2"):
@@ -205,5 +210,33 @@ for kind, k, v in rows:
 rd.sheet_view.showGridLines = False
 
 del wb["Sheet"]
-wb.save("data/Portfolio_Reporting_Template.xlsx")
+OUT = "data/Portfolio_Reporting_Template.xlsx"
+wb.save(OUT)
+
+
+def freeze_timestamps(path, when):
+    """Rewrite the xlsx so two builds of the same dataset are byte-identical.
+
+    An xlsx is a zip: openpyxl stamps every entry's mtime with "now" and rewrites
+    dcterms:modified on save. Left alone, each rebuild is a 72 KB binary diff with
+    an identical payload, which buries the real changes in the snapshot history.
+    """
+    import zipfile, re, shutil
+    stamp = when.strftime("%Y-%m-%dT%H:%M:%SZ")
+    entries = []
+    with zipfile.ZipFile(path) as z:
+        for info in z.infolist():
+            body = z.read(info.filename)
+            if info.filename == "docProps/core.xml":
+                body = re.sub(rb"(<dcterms:(?:created|modified)[^>]*>)[^<]*(</)",
+                              rb"\g<1>" + stamp.encode() + rb"\g<2>", body)
+            entries.append((info.filename, body))
+    tmp = path + ".tmp"
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, body in entries:
+            z.writestr(zipfile.ZipInfo(name, date_time=when.timetuple()[:6]), body)
+    shutil.move(tmp, path)
+
+
+freeze_timestamps(OUT, dt.datetime.fromisoformat(D["meta"]["generated"]))
 print("saved")
